@@ -295,7 +295,7 @@ namespace __detail
   };
 
   template<bool _Cache_hash_code, bool _Constant_iterators
-    , bool _Unique_keys, _access_type _Access_keys = _access_type::_Random>
+    , bool _Unique_keys, _access_type _Access_keys = _Random>
     struct _Hashtable_traits
     {
       using __hash_cached = __bool_constant<_Cache_hash_code>;
@@ -305,7 +305,8 @@ namespace __detail
     };
 
   template<bool _Cache_hash_code, bool _Constant_iterators, bool _Unique_keys>
-    struct _Hashtable_traits<_Cache_hash_code, _Constant_iterators, true, _access_type::_Sequential>
+    struct _Hashtable_traits<_Cache_hash_code, _Constant_iterators
+      , true, _access_type::_Sequential>
     {
       using __hash_cached = __bool_constant<_Cache_hash_code>;
       using __constant_iterators = __bool_constant<_Constant_iterators>;
@@ -339,7 +340,7 @@ namespace __detail
    *  @tparam _Access_keys enum value. `_Sequential` for sequential access to elements.
    *  `_Random` for the default behavior.
    */
-  template<typename _Tp, _access_type = _access_type::_Random>
+  template<typename _Tp, _access_type = _Random>
   struct _Hash_node_base
   {
     using __node_base_t = _Tp;
@@ -425,9 +426,22 @@ namespace __detail
   /**
    *  Primary template struct _Hash_node.
    */
-  template<typename _Value, bool _Cache_hash_code>
+  template<typename _Value, bool _Cache_hash_code, _access_type = _Random>
     struct _Hash_node
-    : _Hash_node_base
+    : _Hash_node_base<_Hash_node>
+    , _Hash_node_value<_Value, _Cache_hash_code>
+    {
+      _Hash_node*
+      _M_next() const noexcept
+      { return static_cast<_Hash_node*>(this->_M_nxt); }
+    };
+
+  /**
+   *  Specialization for node with Sequential Access.
+   */
+  template<typename _Value, bool _Cache_hash_code>
+    struct _Hash_node<_Value, _Cache_hash_code, _access_type::_Sequential>
+    : _Hash_node_base<_Hash_node>
     , _Hash_node_value<_Value, _Cache_hash_code>
     {
       _Hash_node*
