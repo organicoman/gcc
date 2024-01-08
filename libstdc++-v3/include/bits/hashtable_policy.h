@@ -288,14 +288,14 @@ namespace __detail
    *  Setting this parameter to `_Sequential` implys _Unique_keys = True.  
    */
 
-  enum _Access_type
+  enum _access_type
   {
     _Random = false,
     _Sequential = true
   };
 
   template<bool _Cache_hash_code, bool _Constant_iterators
-    , bool _Unique_keys, _Access_type _Access_keys = _Access_type::_Random>
+    , bool _Unique_keys, _access_type _Access_keys = _access_type::_Random>
     struct _Hashtable_traits
     {
       using __hash_cached = __bool_constant<_Cache_hash_code>;
@@ -305,7 +305,7 @@ namespace __detail
     };
 
   template<bool _Cache_hash_code, bool _Constant_iterators, bool _Unique_keys>
-    struct _Hashtable_traits<_Cache_hash_code, _Constant_iterators, true, _Access_type::_Sequential>
+    struct _Hashtable_traits<_Cache_hash_code, _Constant_iterators, true, _access_type::_Sequential>
     {
       using __hash_cached = __bool_constant<_Cache_hash_code>;
       using __constant_iterators = __bool_constant<_Constant_iterators>;
@@ -334,14 +334,37 @@ namespace __detail
    *  template parameter of class template _Hashtable controls whether
    *  nodes also store a hash code. In some cases (e.g. strings) this
    *  may be a performance win.
+   * 
+   *  @tparam _Tp node type. using CRTP to avoid static_cast<>.
+   *  @tparam _Access_keys enum value. `_Sequential` for sequential access to elements.
+   *  `_Random` for the default behavior.
    */
+  template<typename _Tp, _access_type _Access_keys = _access_type::_Random>
   struct _Hash_node_base
   {
-    _Hash_node_base* _M_nxt;
+    using __node_base_t = _Tp;
+    using __node_base_ptr = __node_base_t*;
+
+    __node_base_ptr _M_nxt;
 
     _Hash_node_base() noexcept : _M_nxt() { }
 
-    _Hash_node_base(_Hash_node_base* __next) noexcept : _M_nxt(__next) { }
+    _Hash_node_base(__node_base_ptr __next) noexcept : _M_nxt(__next) { }
+  };
+
+  template<typename _Tp>
+  struct _Hash_node_base<_Tp, _access_type::_Sequential>
+  {
+    using __node_base_t = _Tp;
+    using __node_base_ptr = __node_base_t*;
+
+    __node_base_ptr _M_nxt;
+    __node_base_ptr _M_aftr;
+
+    _Hash_node_base() noexcept : _M_nxt(), _M_aftr() { }
+
+    _Hash_node_base(__node_base_ptr __next, __node_base_ptr __after = nullptr) 
+    noexcept : _M_nxt(__next), _M_aftr(__after) { }
   };
 
   /**
