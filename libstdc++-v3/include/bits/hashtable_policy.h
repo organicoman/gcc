@@ -426,27 +426,22 @@ namespace __detail
   /**
    *  Primary template struct _Hash_node.
    */
-  template<typename _Value, bool _Cache_hash_code, _access_type = _Random>
+  template<typename _Value, bool _Cache_hash_code, _access_type _Access_keys = _Random>
     struct _Hash_node
-    : _Hash_node_base<_Hash_node>
+    : _Hash_node_base<_Hash_node, _Access_keys>
     , _Hash_node_value<_Value, _Cache_hash_code>
     {
       _Hash_node*
       _M_next() const noexcept
       { return static_cast<_Hash_node*>(this->_M_nxt); }
-    };
 
-  /**
-   *  Specialization for node with Sequential Access.
-   */
-  template<typename _Value, bool _Cache_hash_code>
-    struct _Hash_node<_Value, _Cache_hash_code, _access_type::_Sequential>
-    : _Hash_node_base<_Hash_node>
-    , _Hash_node_value<_Value, _Cache_hash_code>
-    {
       _Hash_node*
-      _M_next() const noexcept
-      { return static_cast<_Hash_node*>(this->_M_nxt); }
+      _M_after() const noexcept
+      { 
+        if constexpr(_Access_keys == _access_type::_Random)
+          return nullptr;
+        return static_cast<_Hash_node*>(this->_M_aftr); 
+      }
     };
 
   /// Base class for node iterators.
