@@ -120,9 +120,8 @@ namespace __detail
     struct _ConvertToValueType<_Identity, _Value>
     {
       template<typename _Kt>
-	constexpr _Kt&&
-	operator()(_Kt&& __k) const noexcept
-	{ return std::forward<_Kt>(__k); }
+	    constexpr _Kt&& operator()(_Kt&& __k) const noexcept
+	    { return std::forward<_Kt>(__k); }
     };
 
   template<typename _Value>
@@ -137,14 +136,12 @@ namespace __detail
       { return __x; }
 
       template<typename _Kt, typename _Val>
-	constexpr std::pair<_Kt, _Val>&&
-	operator()(std::pair<_Kt, _Val>&& __x) const noexcept
-	{ return std::move(__x); }
+	    constexpr std::pair<_Kt, _Val>&& operator()(std::pair<_Kt, _Val>&& __x) const noexcept
+	    { return std::move(__x); }
 
       template<typename _Kt, typename _Val>
-	constexpr const std::pair<_Kt, _Val>&
-	operator()(const std::pair<_Kt, _Val>& __x) const noexcept
-	{ return __x; }
+	    constexpr const std::pair<_Kt, _Val>&	operator()(const std::pair<_Kt, _Val>& __x) const noexcept
+	    { return __x; }
     };
 
   template<typename _ExKey>
@@ -154,23 +151,21 @@ namespace __detail
     struct _NodeBuilder<_Select1st>
     {
       template<typename _Kt, typename _Arg, typename _NodeGenerator>
-	static auto
-	_S_build(_Kt&& __k, _Arg&& __arg, const _NodeGenerator& __node_gen)
-	-> typename _NodeGenerator::__node_ptr
-	{
-	  return __node_gen(std::forward<_Kt>(__k),
+	    static auto	_S_build(_Kt&& __k, _Arg&& __arg, const _NodeGenerator& __node_gen)
+	    -> typename _NodeGenerator::__node_ptr
+	    {
+	      return __node_gen(std::forward<_Kt>(__k),
 			    std::forward<_Arg>(__arg).second);
-	}
+	      }
     };
 
   template<>
     struct _NodeBuilder<_Identity>
     {
       template<typename _Kt, typename _Arg, typename _NodeGenerator>
-	static auto
-	_S_build(_Kt&& __k, _Arg&&, const _NodeGenerator& __node_gen)
-	-> typename _NodeGenerator::__node_ptr
-	{ return __node_gen(std::forward<_Kt>(__k)); }
+	    static auto _S_build(_Kt&& __k, _Arg&&, const _NodeGenerator& __node_gen)
+	    -> typename _NodeGenerator::__node_ptr
+	    { return __node_gen(std::forward<_Kt>(__k)); }
     };
 
   template<typename _HashtableAlloc, typename _NodePtr>
@@ -181,8 +176,8 @@ namespace __detail
 
       ~_NodePtrGuard()
       {
-	if (_M_ptr)
-	  _M_h._M_deallocate_node_ptr(_M_ptr);
+	      if (_M_ptr)
+	      _M_h._M_deallocate_node_ptr(_M_ptr);
       }
     };
 
@@ -211,23 +206,22 @@ namespace __detail
       { _M_h._M_deallocate_nodes(_M_nodes); }
 
       template<typename... _Args>
-	__node_ptr
-	operator()(_Args&&... __args) const
-	{
-	  if (!_M_nodes)
-	    return _M_h._M_allocate_node(std::forward<_Args>(__args)...);
+	    __node_ptr	operator()(_Args&&... __args) const
+	    {
+	      if (!_M_nodes)
+	        return _M_h._M_allocate_node(std::forward<_Args>(__args)...);
 
-	  __node_ptr __node = _M_nodes;
-	  _M_nodes = _M_nodes->_M_next();
-	  __node->_M_nxt = nullptr;
-	  auto& __a = _M_h._M_node_allocator();
-	  __node_alloc_traits::destroy(__a, __node->_M_valptr());
-	  _NodePtrGuard<__hashtable_alloc, __node_ptr> __guard { _M_h, __node };
-	  __node_alloc_traits::construct(__a, __node->_M_valptr(),
-					 std::forward<_Args>(__args)...);
-	  __guard._M_ptr = nullptr;
-	  return __node;
-	}
+	      __node_ptr __node = _M_nodes;
+	      _M_nodes = _M_nodes->_M_next();
+	      __node->_M_nxt = nullptr;
+	      auto& __a = _M_h._M_node_allocator();
+	      __node_alloc_traits::destroy(__a, __node->_M_valptr());
+	      _NodePtrGuard<__hashtable_alloc, __node_ptr> __guard { _M_h, __node };
+	      __node_alloc_traits::construct(__a, __node->_M_valptr(),
+		    			 std::forward<_Args>(__args)...);
+	      __guard._M_ptr = nullptr;
+	      return __node;
+	    }
 
     private:
       mutable __node_ptr _M_nodes;
@@ -249,9 +243,8 @@ namespace __detail
       : _M_h(__h) { }
 
       template<typename... _Args>
-	__node_ptr
-	operator()(_Args&&... __args) const
-	{ return _M_h._M_allocate_node(std::forward<_Args>(__args)...); }
+	    __node_ptr operator()(_Args&&... __args) const
+	    { return _M_h._M_allocate_node(std::forward<_Args>(__args)...); }
 
     private:
       __hashtable_alloc& _M_h;
@@ -282,12 +275,29 @@ namespace __detail
    *  unordered_map, false for unordered_multiset and
    *  unordered_multimap.
    */
-  template<bool _Cache_hash_code, bool _Constant_iterators, bool _Unique_keys>
+  
+  /// enums to make to code more readable
+  enum _cache_hash 
+  {
+    _Disable = false,
+    _Enable = true
+  };
+  enum _iterator_status
+  {
+    _NotConst = false,
+    _Constant = true
+  };
+  enum _key_value
+  {
+    _NotUnique = false,
+    _Unique = true
+  };
+  template<_cache_hash _Cache_state, _iterator_status _Const_iterator, _key_value _Key>
     struct _Hashtable_traits
     {
-      using __hash_cached = __bool_constant<_Cache_hash_code>;
-      using __constant_iterators = __bool_constant<_Constant_iterators>;
-      using __unique_keys = __bool_constant<_Unique_keys>;
+      using __hash_cached = __bool_constant<_Cache_state == _Enable>;
+      using __constant_iterators = __bool_constant<_Const_status == _Constant>;
+      using __unique_keys = __bool_constant<_Key == _Unique>;
     };
 
   /**
@@ -320,6 +330,23 @@ namespace __detail
 
     _Hash_node_base(_Hash_node_base* __next) noexcept : _M_nxt(__next) { }
   };
+  /**
+   *  struct _Hash_node_seq_base
+   *
+   *  Nodes, used to wrap elements stored in seqiential hash table.  
+   *  A policy template parameter of class template _Hashtable controls whether
+   *  to trigger sequentiality.
+   */
+  struct _Hash_node_seq_base : public _Hash_node_base
+  {
+    _Hash_node_seq_base* _M_aft;
+
+    _Hash_node_seq_base() noexcept: _Hash_node_base(), _M_aft() {}
+
+    _Hash_node_seq_base(_Hash_node_seq_base* __next, _Hash_node_seq_base* __after)
+      : _Hash_node_base(__next), _M_aft(__after) 
+    {}
+  };
 
   /**
    *  struct _Hash_node_value_base
@@ -334,30 +361,26 @@ namespace __detail
       __gnu_cxx::__aligned_buffer<_Value> _M_storage;
 
       [[__gnu__::__always_inline__]]
-      _Value*
-      _M_valptr() noexcept
+      _Value* _M_valptr() noexcept
       { return _M_storage._M_ptr(); }
 
       [[__gnu__::__always_inline__]]
-      const _Value*
-      _M_valptr() const noexcept
+      const _Value* _M_valptr() const noexcept
       { return _M_storage._M_ptr(); }
 
       [[__gnu__::__always_inline__]]
-      _Value&
-      _M_v() noexcept
+      _Value& _M_v() noexcept
       { return *_M_valptr(); }
 
       [[__gnu__::__always_inline__]]
-      const _Value&
-      _M_v() const noexcept
+      const _Value& _M_v() const noexcept
       { return *_M_valptr(); }
     };
 
   /**
    *  Primary template struct _Hash_node_code_cache.
    */
-  template<bool _Cache_hash_code>
+  template<_cache_hash = _Disable>
     struct _Hash_node_code_cache
     { };
 
@@ -365,10 +388,10 @@ namespace __detail
    *  Specialization for node with cache, struct _Hash_node_code_cache.
    */
   template<>
-    struct _Hash_node_code_cache<true>
+    struct _Hash_node_code_cache<_cache_hash::_Enable>
     { std::size_t  _M_hash_code; };
 
-  template<typename _Value, bool _Cache_hash_code>
+  template<typename _Value, _cache_hash _Cache_hash_code>
     struct _Hash_node_value
     : _Hash_node_value_base<_Value>
     , _Hash_node_code_cache<_Cache_hash_code>
@@ -377,7 +400,7 @@ namespace __detail
   /**
    *  Primary template struct _Hash_node.
    */
-  template<typename _Value, bool _Cache_hash_code>
+  template<typename _Value, _cache_hash _Cache_hash_code>
     struct _Hash_node
     : _Hash_node_base
     , _Hash_node_value<_Value, _Cache_hash_code>
@@ -388,7 +411,7 @@ namespace __detail
     };
 
   /// Base class for node iterators.
-  template<typename _Value, bool _Cache_hash_code>
+  template<typename _Value, _cache_hash _Cache_hash_code>
     struct _Node_iterator_base
     {
       using __node_type = _Hash_node<_Value, _Cache_hash_code>;
@@ -417,7 +440,7 @@ namespace __detail
     };
 
   /// Node iterators, used to iterate through all the hashtable.
-  template<typename _Value, bool __constant_iterators, bool __cache>
+  template<typename _Value, _constant_iterator __constant_iterators, _cache_hash __cache>
     struct _Node_iterator
     : public _Node_iterator_base<_Value, __cache>
     {
@@ -430,7 +453,7 @@ namespace __detail
       using difference_type = std::ptrdiff_t;
       using iterator_category = std::forward_iterator_tag;
 
-      using pointer = __conditional_t<__constant_iterators,
+      using pointer = __conditional_t<__constant_iterators == _Constant,
 				      const value_type*, value_type*>;
 
       using reference = __conditional_t<__constant_iterators,
