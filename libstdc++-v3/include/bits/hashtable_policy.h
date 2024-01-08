@@ -492,13 +492,17 @@ namespace __detail
     };
 
   /// Node iterators, used to iterate through all the hashtable.
-  template<typename _Value, bool __constant_iterators, bool __cache>
+  /// for _local_node_iterator: set to _access_type::_Random
+
+  template<typename _Value, bool __constant_iterators, bool __cache
+    , _access_type __access = _Random>
     struct _Node_iterator
     : public _Node_iterator_base<_Value, __cache>
     {
     private:
-      using __base_type = _Node_iterator_base<_Value, __cache>;
+      using __base_type = _Node_iterator_base<_Value, __cache, __access>;
       using __node_type = typename __base_type::__node_type;
+      using __sequentiality = typename __base_type::__node_squenciality;
 
     public:
       using value_type = _Value;
@@ -528,27 +532,36 @@ namespace __detail
       _Node_iterator&
       operator++() noexcept
       {
-	this->_M_incr();
-	return *this;
+        if constexpr(__sequentiality::value)
+          this->_M_step();
+        else
+          this->_M_incr();
+	      return *this;
       }
 
       _Node_iterator
       operator++(int) noexcept
       {
-	_Node_iterator __tmp(*this);
-	this->_M_incr();
-	return __tmp;
+        _Node_iterator __tmp(*this);
+        if constexpr(__sequentiality::value)
+          this->_M_step();
+        else
+          this->_M_incr();
+	      return __tmp;
       }
     };
 
   /// Node const_iterators, used to iterate through all the hashtable.
-  template<typename _Value, bool __constant_iterators, bool __cache>
+  /// for _local_node_iterator: set to _access_type::_Random
+  
+  template<typename _Value, bool __constant_iterators, bool __cache, _access_type __access>
     struct _Node_const_iterator
     : public _Node_iterator_base<_Value, __cache>
     {
     private:
-      using __base_type = _Node_iterator_base<_Value, __cache>;
+      using __base_type = _Node_iterator_base<_Value, __cache, __access>;
       using __node_type = typename __base_type::__node_type;
+      using __sequentiality = typename __base_type::__node_squenciality;
 
     public:
       typedef _Value					value_type;
@@ -579,16 +592,21 @@ namespace __detail
       _Node_const_iterator&
       operator++() noexcept
       {
-	this->_M_incr();
-	return *this;
+	      if constexpr(__sequentiality::value)
+          this->_M_step();
+        else
+          this->_M_incr();
       }
 
       _Node_const_iterator
       operator++(int) noexcept
       {
-	_Node_const_iterator __tmp(*this);
-	this->_M_incr();
-	return __tmp;
+	      _Node_const_iterator __tmp(*this);
+        if constexpr(__sequentiality::value)
+          this->_M_step();
+        else
+          this->_M_incr();
+	      return __tmp;
       }
     };
 
