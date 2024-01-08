@@ -281,13 +281,36 @@ namespace __detail
    *  be an arbitrary number. This is true for unordered_set and
    *  unordered_map, false for unordered_multiset and
    *  unordered_multimap.
+   *  
+   *  @tparam _Access_keys Enum value. `_Sequential` if a sequential access
+   *  to elements according to insertion order, is required.
+   *  `_Random` if the default behavior.
+   *  Setting this parameter to `_Sequential` implys _Unique_keys = True.  
    */
-  template<bool _Cache_hash_code, bool _Constant_iterators, bool _Unique_keys>
+
+  enum _Access_type
+  {
+    _Random = false,
+    _Sequential = true
+  };
+
+  template<bool _Cache_hash_code, bool _Constant_iterators
+    , bool _Unique_keys, _Access_type _Access_keys = _Access_type::_Random>
     struct _Hashtable_traits
     {
       using __hash_cached = __bool_constant<_Cache_hash_code>;
       using __constant_iterators = __bool_constant<_Constant_iterators>;
       using __unique_keys = __bool_constant<_Unique_keys>;
+      using __sequential_keys = __bool_constant<false>;
+    };
+
+  template<bool _Cache_hash_code, bool _Constant_iterators, bool _Unique_keys>
+    struct _Hashtable_traits<_Cache_hash_code, _Constant_iterators, true, _Access_type::_Sequential>
+    {
+      using __hash_cached = __bool_constant<_Cache_hash_code>;
+      using __constant_iterators = __bool_constant<_Constant_iterators>;
+      using __unique_keys = __bool_constant<true>;
+      using __sequential_keys = __bool_constant<true>; 
     };
 
   /**
