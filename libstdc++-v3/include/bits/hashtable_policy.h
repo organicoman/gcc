@@ -461,7 +461,7 @@ namespace __detail
     struct _Node_iterator_base
     {
       using __node_type = _Hash_node<_Value, _Cache_hash_code, _Access_keys>;
-      using __node_squeciality = typename __node_type::__sequential_keys;
+      using __node_squenciality = typename __node_type::__sequential_keys;
 
       __node_type* _M_cur;
 
@@ -473,7 +473,8 @@ namespace __detail
       _M_incr() noexcept
       { _M_cur = _M_cur->_M_next(); }
 
-      std::enable_if_t<__node_squeciality::value, void> 
+      /// not available if not a sequential hash table.
+      std::enable_if_t<__node_squenciality::value, void> 
       _M_step() noexcept
       { _M_cur = _M_cur->_M_after(); }
 
