@@ -438,27 +438,44 @@ namespace __detail
       _Hash_node*
       _M_after() const noexcept
       { 
-        if constexpr(_Access_keys == _access_type::_Random)
-          return nullptr;
-        return static_cast<_Hash_node*>(this->_M_aftr); 
+        if constexpr(_Access_keys == _access_type::_Sequential)
+          return static_cast<_Hash_node*>(this->_M_aftr);
+        
+        return nullptr;
       }
     };
 
-  /// Base class for node iterators.
-  template<typename _Value, bool _Cache_hash_code>
+  /* Base class for node iterators for default implementation of _Hashtable.
+   * If and only if the hash table is sequential, we provide a method to 
+   * step through the sequence of elements.
+   * The Behavior will model a std::bidirectional_iterator, but the trait:
+   * --(++(it)) == ++(--(it)) == it
+   * will not be respected. So no decrement operator will be provided.
+   * This non canonical implementation will trigger an interesting feature,
+   * Where you can find a key then step to the key after it in sequence.
+   * 
+   * Note: is it more appropriate to implement a separate iterator to step
+   * sequentially through the elements, much like _local_iterator below?
+   */
+  template<typename _Value, bool _Cache_hash_code, _access_type _Access_keys>
     struct _Node_iterator_base
     {
-      using __node_type = _Hash_node<_Value, _Cache_hash_code>;
+      using __node_type = _Hash_node<_Value, _Cache_hash_code, _Access_keys>;
+      using __node_squeciality = typename __node_type::__sequential_keys;
 
       __node_type* _M_cur;
 
-      _Node_iterator_base() : _M_cur(nullptr) { }
+      _Node_iterator_base() noexcept: _M_cur(nullptr) { }
       _Node_iterator_base(__node_type* __p) noexcept
       : _M_cur(__p) { }
 
       void
       _M_incr() noexcept
       { _M_cur = _M_cur->_M_next(); }
+
+      std::enable_if_t<__node_squeciality::value, void> 
+      _M_step() noexcept
+      { _M_cur = _M_cur->_M_after(); }
 
       friend bool
       operator==(const _Node_iterator_base& __x, const _Node_iterator_base& __y)
