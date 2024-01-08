@@ -339,11 +339,12 @@ namespace __detail
    *  @tparam _Access_keys enum value. `_Sequential` for sequential access to elements.
    *  `_Random` for the default behavior.
    */
-  template<typename _Tp, _access_type _Access_keys = _access_type::_Random>
+  template<typename _Tp, _access_type = _access_type::_Random>
   struct _Hash_node_base
   {
     using __node_base_t = _Tp;
     using __node_base_ptr = __node_base_t*;
+    using __sequential_keys = __bool_constant<false>;
 
     __node_base_ptr _M_nxt;
 
@@ -357,6 +358,7 @@ namespace __detail
   {
     using __node_base_t = _Tp;
     using __node_base_ptr = __node_base_t*;
+    using __sequential_keys = __bool_constant<true>;
 
     __node_base_ptr _M_nxt;
     __node_base_ptr _M_aftr;
