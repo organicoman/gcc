@@ -120,8 +120,9 @@ namespace __detail
     struct _ConvertToValueType<_Identity, _Value>
     {
       template<typename _Kt>
-	    constexpr _Kt&& operator()(_Kt&& __k) const noexcept
-	    { return std::forward<_Kt>(__k); }
+	constexpr _Kt&&
+	operator()(_Kt&& __k) const noexcept
+	{ return std::forward<_Kt>(__k); }
     };
 
   template<typename _Value>
@@ -136,12 +137,14 @@ namespace __detail
       { return __x; }
 
       template<typename _Kt, typename _Val>
-	    constexpr std::pair<_Kt, _Val>&& operator()(std::pair<_Kt, _Val>&& __x) const noexcept
-	    { return std::move(__x); }
+	constexpr std::pair<_Kt, _Val>&&
+	operator()(std::pair<_Kt, _Val>&& __x) const noexcept
+	{ return std::move(__x); }
 
       template<typename _Kt, typename _Val>
-	    constexpr const std::pair<_Kt, _Val>&	operator()(const std::pair<_Kt, _Val>& __x) const noexcept
-	    { return __x; }
+	constexpr const std::pair<_Kt, _Val>&
+	operator()(const std::pair<_Kt, _Val>& __x) const noexcept
+	{ return __x; }
     };
 
   template<typename _ExKey>
@@ -151,21 +154,23 @@ namespace __detail
     struct _NodeBuilder<_Select1st>
     {
       template<typename _Kt, typename _Arg, typename _NodeGenerator>
-	    static auto	_S_build(_Kt&& __k, _Arg&& __arg, const _NodeGenerator& __node_gen)
-	    -> typename _NodeGenerator::__node_ptr
-	    {
-	      return __node_gen(std::forward<_Kt>(__k),
+	static auto
+	_S_build(_Kt&& __k, _Arg&& __arg, const _NodeGenerator& __node_gen)
+	-> typename _NodeGenerator::__node_ptr
+	{
+	  return __node_gen(std::forward<_Kt>(__k),
 			    std::forward<_Arg>(__arg).second);
-	      }
+	}
     };
 
   template<>
     struct _NodeBuilder<_Identity>
     {
       template<typename _Kt, typename _Arg, typename _NodeGenerator>
-	    static auto _S_build(_Kt&& __k, _Arg&&, const _NodeGenerator& __node_gen)
-	    -> typename _NodeGenerator::__node_ptr
-	    { return __node_gen(std::forward<_Kt>(__k)); }
+	static auto
+	_S_build(_Kt&& __k, _Arg&&, const _NodeGenerator& __node_gen)
+	-> typename _NodeGenerator::__node_ptr
+	{ return __node_gen(std::forward<_Kt>(__k)); }
     };
 
   template<typename _HashtableAlloc, typename _NodePtr>
@@ -176,8 +181,8 @@ namespace __detail
 
       ~_NodePtrGuard()
       {
-	      if (_M_ptr)
-	      _M_h._M_deallocate_node_ptr(_M_ptr);
+	if (_M_ptr)
+	  _M_h._M_deallocate_node_ptr(_M_ptr);
       }
     };
 
@@ -206,22 +211,23 @@ namespace __detail
       { _M_h._M_deallocate_nodes(_M_nodes); }
 
       template<typename... _Args>
-	    __node_ptr	operator()(_Args&&... __args) const
-	    {
-	      if (!_M_nodes)
-	        return _M_h._M_allocate_node(std::forward<_Args>(__args)...);
+	__node_ptr
+	operator()(_Args&&... __args) const
+	{
+	  if (!_M_nodes)
+	    return _M_h._M_allocate_node(std::forward<_Args>(__args)...);
 
-	      __node_ptr __node = _M_nodes;
-	      _M_nodes = _M_nodes->_M_next();
-	      __node->_M_nxt = nullptr;
-	      auto& __a = _M_h._M_node_allocator();
-	      __node_alloc_traits::destroy(__a, __node->_M_valptr());
-	      _NodePtrGuard<__hashtable_alloc, __node_ptr> __guard { _M_h, __node };
-	      __node_alloc_traits::construct(__a, __node->_M_valptr(),
-		    			 std::forward<_Args>(__args)...);
-	      __guard._M_ptr = nullptr;
-	      return __node;
-	    }
+	  __node_ptr __node = _M_nodes;
+	  _M_nodes = _M_nodes->_M_next();
+	  __node->_M_nxt = nullptr;
+	  auto& __a = _M_h._M_node_allocator();
+	  __node_alloc_traits::destroy(__a, __node->_M_valptr());
+	  _NodePtrGuard<__hashtable_alloc, __node_ptr> __guard { _M_h, __node };
+	  __node_alloc_traits::construct(__a, __node->_M_valptr(),
+					 std::forward<_Args>(__args)...);
+	  __guard._M_ptr = nullptr;
+	  return __node;
+	}
 
     private:
       mutable __node_ptr _M_nodes;
@@ -243,8 +249,9 @@ namespace __detail
       : _M_h(__h) { }
 
       template<typename... _Args>
-	    __node_ptr operator()(_Args&&... __args) const
-	    { return _M_h._M_allocate_node(std::forward<_Args>(__args)...); }
+	__node_ptr
+	operator()(_Args&&... __args) const
+	{ return _M_h._M_allocate_node(std::forward<_Args>(__args)...); }
 
     private:
       __hashtable_alloc& _M_h;
@@ -274,30 +281,43 @@ namespace __detail
    *  be an arbitrary number. This is true for unordered_set and
    *  unordered_map, false for unordered_multiset and
    *  unordered_multimap.
+   *
+   *  @tparam _Sequential  Boolean value. True if the hash table models
+   *  a sequential container. This is can be true for unordered_set and
+   *  unordered_map, false for unordered_multiset and
+   *  unordered_multimap.
    */
-  
-  /// enums to make to code more readable
-  enum _cache_hash 
-  {
-    _Disable = false,
-    _Enable = true
-  };
-  enum _iterator_status
-  {
-    _NotConst = false,
-    _Constant = true
-  };
-  enum _key_value
-  {
-    _NotUnique = false,
-    _Unique = true
-  };
-  template<_cache_hash _Cache_state, _iterator_status _Const_iterator, _key_value _Key>
+
+    enum __cache {_Disable = false, _Enable = true};
+    enum __iterator_const { _No = false, _Yes = true};
+    enum __keys { _Redundant = false, _Unique = true};
+    enum __access { _Random = false, _Sequential = true};
+
+  /**
+   * @brief The _Hashtable_traits class, primary template
+   */
+    template<__cache _Cache_hash_code, __iterator_const _Constant_iterators
+             , __keys _Unique_keys, __access _Sequential = _Random>
     struct _Hashtable_traits
     {
-      using __hash_cached = __bool_constant<_Cache_state == _Enable>;
-      using __constant_iterators = __bool_constant<_Const_status == _Constant>;
-      using __unique_keys = __bool_constant<_Key == _Unique>;
+      using __hash_cached = __bool_constant<_Cache_hash_code == _Enable>;
+      using __constant_iterators = __bool_constant<_Constant_iterators == _Yes>;
+      using __unique_keys = __bool_constant<_Unique_keys == _Unique>;
+      using __sequential = __bool_constant<_Sequential == _Sequential>;
+    };
+
+  /**
+   * @brief Specialization for sequential keys access.
+   */
+    template<__cache _Cache_hash_code, __iterator_const _Constant_iterators
+             , __keys _Unique_keys>
+    struct _Hashtable_traits<_Cache_hash_code, _Constant_iterators
+                             , _Unique_keys, _Sequential>
+    {
+        using __hash_cached = __bool_constant<_Cache_hash_code == _Enable>;
+        using __constant_iterators = __bool_constant<_Constant_iterators == _Yes>;
+        using __unique_keys = __bool_constant<true>;
+        using __sequential = __bool_constant<true>;
     };
 
   /**
@@ -306,7 +326,7 @@ namespace __detail
    *  Important traits for hash tables depending on associated hasher.
    *
    */
-  template<typename _Hash>
+    template<typename _Hash>
     struct _Hashtable_hash_traits
     {
       static constexpr std::size_t
@@ -315,38 +335,42 @@ namespace __detail
     };
 
   /**
-   *  struct _Hash_node_base
+   *  Primary template struct _Hash_node_base
    *
    *  Nodes, used to wrap elements stored in the hash table.  A policy
    *  template parameter of class template _Hashtable controls whether
-   *  nodes also store a hash code. In some cases (e.g. strings) this
-   *  may be a performance win.
+   *  nodes also store a hash code and/or access to keys is sequential.
+   *  In some cases enabling cache is a performance win (e.g. strings).
    */
-  struct _Hash_node_base
-  {
-    _Hash_node_base* _M_nxt;
+    template<bool _Sequential = false>
+    struct _Hash_node_base
+    {
+      using __node_sequential_access = false_type;
 
-    _Hash_node_base() noexcept : _M_nxt() { }
+      _Hash_node_base* _M_nxt;
 
-    _Hash_node_base(_Hash_node_base* __next) noexcept : _M_nxt(__next) { }
-  };
-  /**
-   *  struct _Hash_node_seq_base
-   *
-   *  Nodes, used to wrap elements stored in seqiential hash table.  
-   *  A policy template parameter of class template _Hashtable controls whether
-   *  to trigger sequentiality.
-   */
-  struct _Hash_node_seq_base : public _Hash_node_base
-  {
-    _Hash_node_seq_base* _M_aft;
+      _Hash_node_base() noexcept : _M_nxt() { }
 
-    _Hash_node_seq_base() noexcept: _Hash_node_base(), _M_aft() {}
+      _Hash_node_base(_Hash_node_base* __next) noexcept : _M_nxt(__next) { }
+    };
 
-    _Hash_node_seq_base(_Hash_node_seq_base* __next, _Hash_node_seq_base* __after)
-      : _Hash_node_base(__next), _M_aft(__after) 
-    {}
-  };
+    /**
+     * @brief Specialization _Hash_node_base class for sequential access.
+     */
+    template<>
+    struct _Hash_node_base<true>
+    {
+      using __node_sequential_access = true_type;
+
+      _Hash_node_base* _M_nxt;
+
+      _Hash_node_base* _M_aft;
+
+      _Hash_node_base() noexcept : _M_nxt() { }
+
+      _Hash_node_base(_Hash_node_base* __next, _Hash_node_base* __after = nullptr)
+        noexcept : _M_nxt(__next), _M_aft(__after) { }
+    };
 
   /**
    *  struct _Hash_node_value_base
@@ -361,26 +385,30 @@ namespace __detail
       __gnu_cxx::__aligned_buffer<_Value> _M_storage;
 
       [[__gnu__::__always_inline__]]
-      _Value* _M_valptr() noexcept
+      _Value*
+      _M_valptr() noexcept
       { return _M_storage._M_ptr(); }
 
       [[__gnu__::__always_inline__]]
-      const _Value* _M_valptr() const noexcept
+      const _Value*
+      _M_valptr() const noexcept
       { return _M_storage._M_ptr(); }
 
       [[__gnu__::__always_inline__]]
-      _Value& _M_v() noexcept
+      _Value&
+      _M_v() noexcept
       { return *_M_valptr(); }
 
       [[__gnu__::__always_inline__]]
-      const _Value& _M_v() const noexcept
+      const _Value&
+      _M_v() const noexcept
       { return *_M_valptr(); }
     };
 
   /**
    *  Primary template struct _Hash_node_code_cache.
    */
-  template<_cache_hash = _Disable>
+  template<bool _Cache_hash_code>
     struct _Hash_node_code_cache
     { };
 
@@ -388,10 +416,10 @@ namespace __detail
    *  Specialization for node with cache, struct _Hash_node_code_cache.
    */
   template<>
-    struct _Hash_node_code_cache<_cache_hash::_Enable>
+    struct _Hash_node_code_cache<true>
     { std::size_t  _M_hash_code; };
 
-  template<typename _Value, _cache_hash _Cache_hash_code>
+  template<typename _Value, bool _Cache_hash_code>
     struct _Hash_node_value
     : _Hash_node_value_base<_Value>
     , _Hash_node_code_cache<_Cache_hash_code>
@@ -399,22 +427,37 @@ namespace __detail
 
   /**
    *  Primary template struct _Hash_node.
+   *  same like above, we will rely on Traits policy,
+   *  to customize the hash node.
+   *  Sequentiality is enabled iff the traits activate it.
    */
-  template<typename _Value, _cache_hash _Cache_hash_code>
+  template<typename _Value, typename _Traits>
     struct _Hash_node
-    : _Hash_node_base
-    , _Hash_node_value<_Value, _Cache_hash_code>
+        : _Hash_node_base<_Traits::__sequential::value>
+        , _Hash_node_value<_Value, _Traits::__hash_cached::value>
     {
+      using __hash_node_traits = _Traits;
+      using __is_sequential = typename __hash_node_traits::__sequential;
+
       _Hash_node*
       _M_next() const noexcept
       { return static_cast<_Hash_node*>(this->_M_nxt); }
+
+      _Hash_node*
+      _M_after() const noexcept
+      {
+        if constexpr (__is_sequential::value)
+          return static_cast<_Hash_node*>(this->_M_aft);
+        return nullptr;
+      }
     };
 
   /// Base class for node iterators.
-  template<typename _Value, _cache_hash _Cache_hash_code>
+    template<typename _Value, typename _Traits>
     struct _Node_iterator_base
     {
-      using __node_type = _Hash_node<_Value, _Cache_hash_code>;
+      using __node_type = _Hash_node<_Value, _Traits>;
+      using __is_sequential = typename __node_type::__is_sequential;
 
       __node_type* _M_cur;
 
@@ -425,6 +468,10 @@ namespace __detail
       void
       _M_incr() noexcept
       { _M_cur = _M_cur->_M_next(); }
+
+      void
+      _M_step() noexcept
+      { if constexpr (__is_sequential::value) _M_cur = _M_cur->_M_after();}
 
       friend bool
       operator==(const _Node_iterator_base& __x, const _Node_iterator_base& __y)
@@ -440,23 +487,24 @@ namespace __detail
     };
 
   /// Node iterators, used to iterate through all the hashtable.
-  template<typename _Value, _constant_iterator __constant_iterators, _cache_hash __cache>
+  template<typename _Value, typename _Traits>
     struct _Node_iterator
-    : public _Node_iterator_base<_Value, __cache>
+    : public _Node_iterator_base<_Value, _Traits>
     {
     private:
-      using __base_type = _Node_iterator_base<_Value, __cache>;
+      using __base_type = _Node_iterator_base<_Value, _Traits>;
       using __node_type = typename __base_type::__node_type;
+      using __is_sequential = typename __base_type::__is_sequential;
 
     public:
       using value_type = _Value;
       using difference_type = std::ptrdiff_t;
       using iterator_category = std::forward_iterator_tag;
 
-      using pointer = __conditional_t<__constant_iterators == _Constant,
+      using pointer = __conditional_t<_Traits::__constant_iterators::value,
 				      const value_type*, value_type*>;
 
-      using reference = __conditional_t<__constant_iterators,
+      using reference = __conditional_t<_Traits::__constant_iterators::value,
 					const value_type&, value_type&>;
 
       _Node_iterator() = default;
@@ -490,13 +538,14 @@ namespace __detail
     };
 
   /// Node const_iterators, used to iterate through all the hashtable.
-  template<typename _Value, bool __constant_iterators, bool __cache>
+  template<typename _Value, typename _Traits>
     struct _Node_const_iterator
-    : public _Node_iterator_base<_Value, __cache>
+    : public _Node_iterator_base<_Value, _Traits>
     {
     private:
-      using __base_type = _Node_iterator_base<_Value, __cache>;
-      using __node_type = typename __base_type::__node_type;
+      using __base_type = _Node_iterator_base<_Value, _Traits>;
+      using __node_type = typename __base_type::__node_type;      
+      using __is_sequential = typename __base_type::__is_sequential;
 
     public:
       typedef _Value					value_type;
@@ -512,8 +561,7 @@ namespace __detail
       _Node_const_iterator(__node_type* __p) noexcept
       : __base_type(__p) { }
 
-      _Node_const_iterator(const _Node_iterator<_Value, __constant_iterators,
-			   __cache>& __x) noexcept
+      _Node_const_iterator(const _Node_iterator<_Value, _Traits>& __x) noexcept
       : __base_type(__x._M_cur) { }
 
       reference
@@ -527,16 +575,73 @@ namespace __detail
       _Node_const_iterator&
       operator++() noexcept
       {
-	this->_M_incr();
-	return *this;
+        this->_M_incr();
+        return *this;
       }
 
       _Node_const_iterator
       operator++(int) noexcept
       {
-	_Node_const_iterator __tmp(*this);
-	this->_M_incr();
-	return __tmp;
+        _Node_const_iterator __tmp(*this);
+        this->_M_incr();
+        return __tmp;
+      }
+    };
+
+    /// Helper Alias
+    template<__cache _Cache_hash_code>
+    using _Sequential_hashtable_traits = _Hashtable_traits<_Cache_hash_code
+                                                           , __iterator_const::_Yes
+                                                           , __keys::_Unique
+                                                           , __access::_Sequential>;
+
+    /// Node iterators, used to iterate through all the hashtable sequentialy.
+    /// It is imperative that this node type should not be used in _NodeAlloc
+    template<typename _Value, __cache _Cache_hash_code>
+    struct _Sequential_const_iterator
+        : public _Node_iterator_base<_Value, _Sequential_hashtable_traits<_Cache_hash_code>>
+    {
+    private:
+      using __hash_node_traits = _Sequential_hashtable_traits<_Cache_hash_code>;
+      using __base_type = _Node_iterator_base<_Value, __hash_node_traits>;
+      using __node_type = typename __base_type::__node_type;
+
+    public:
+      using value_type = _Value;
+      using difference_type = std::ptrdiff_t;
+      using iterator_category = std::forward_iterator_tag;
+
+      using pointer = const value_type*;
+      using reference = const value_type&;
+
+      _Sequential_const_iterator() = default;
+
+      explicit _Sequential_const_iterator(__node_type* __p) noexcept
+      : __base_type(__p) { }
+
+      _Sequential_const_iterator(
+        const _Sequential_const_iterator<_Value, _Cache_hash_code>& __x
+        ) noexcept
+      : __base_type(__x._M_cur) { }
+
+      reference
+      operator*() const noexcept
+      { return this->_M_cur->_M_v(); }
+
+      pointer
+      operator->() const noexcept
+      { return this->_M_cur->_M_valptr(); }
+
+      _Sequential_const_iterator&
+      operator++() noexcept
+      { this->_M_step(); return *this; }
+
+      _Sequential_const_iterator
+      operator++(int) noexcept
+      {
+        _Sequential_const_iterator __tmp(*this);
+        this->_M_step();
+        return __tmp;
       }
     };
 
@@ -795,6 +900,11 @@ namespace __detail
     struct _Map_base<_Key, pair<const _Key, _Val>, _Alloc, _Select1st, _Equal,
 		     _Hash, _RangeHash, _Unused, _RehashPolicy, _Traits, false>
     {
+      static_assert(_Traits::__unique_keys::value != false
+                      , "In instantiation of"
+                      " (_Map_base<...,typename _Traits, false>); "
+                      "set [_Unique_keys] param in `_Traits<..>`"
+                      " to `_Redundant`.");
       using mapped_type = _Val;
     };
 
@@ -805,6 +915,11 @@ namespace __detail
     struct _Map_base<_Key, pair<const _Key, _Val>, _Alloc, _Select1st, _Equal,
 		     _Hash, _RangeHash, _Unused, _RehashPolicy, _Traits, true>
     {
+      static_assert(_Traits::__unique_keys::value != true
+                    , "In instantiation of"
+                    " (_Map_base<...,typename _Traits, true>); "
+                    "set [_Unique_keys] param in `_Traits<..>`"
+                    " to `_Unique`.");
     private:
       using __hashtable_base = _Hashtable_base<_Key, pair<const _Key, _Val>,
 					       _Select1st, _Equal, _Hash,
@@ -832,19 +947,19 @@ namespace __detail
       mapped_type&
       at(const key_type& __k)
       {
-	auto __ite = static_cast<__hashtable*>(this)->find(__k);
-	if (!__ite._M_cur)
-	  __throw_out_of_range(__N("unordered_map::at"));
-	return __ite->second;
+        auto __ite = static_cast<__hashtable*>(this)->find(__k);
+        if (!__ite._M_cur)
+          __throw_out_of_range(__N("unordered_map::at"));
+        return __ite->second;
       }
 
       const mapped_type&
       at(const key_type& __k) const
       {
-	auto __ite = static_cast<const __hashtable*>(this)->find(__k);
-	if (!__ite._M_cur)
-	  __throw_out_of_range(__N("unordered_map::at"));
-	return __ite->second;
+        auto __ite = static_cast<const __hashtable*>(this)->find(__k);
+        if (!__ite._M_cur)
+          __throw_out_of_range(__N("unordered_map::at"));
+        return __ite->second;
       }
     };
 
@@ -861,16 +976,17 @@ namespace __detail
       __hash_code __code = __h->_M_hash_code(__k);
       std::size_t __bkt = __h->_M_bucket_index(__code);
       if (auto __node = __h->_M_find_node(__bkt, __k, __code))
-	return __node->_M_v().second;
+        return __node->_M_v().second;
 
-      typename __hashtable::_Scoped_node __node {
-	__h,
-	std::piecewise_construct,
-	std::tuple<const key_type&>(__k),
-	std::tuple<>()
-      };
-      auto __pos
-	= __h->_M_insert_unique_node(__bkt, __code, __node._M_node);
+      typename __hashtable::_Scoped_node
+        __node {
+                __h
+                , std::piecewise_construct
+                , std::tuple<const key_type&>(__k)
+                , std::tuple<>()
+                };
+
+      auto __pos = __h->_M_insert_unique_node(__bkt, __code, __node._M_node);
       __node._M_node = nullptr;
       return __pos->second;
     }
@@ -888,16 +1004,16 @@ namespace __detail
       __hash_code __code = __h->_M_hash_code(__k);
       std::size_t __bkt = __h->_M_bucket_index(__code);
       if (auto __node = __h->_M_find_node(__bkt, __k, __code))
-	return __node->_M_v().second;
+        return __node->_M_v().second;
 
-      typename __hashtable::_Scoped_node __node {
-	__h,
-	std::piecewise_construct,
-	std::forward_as_tuple(std::move(__k)),
-	std::tuple<>()
-      };
-      auto __pos
-	= __h->_M_insert_unique_node(__bkt, __code, __node._M_node);
+      typename __hashtable::_Scoped_node
+        __node {
+                __h
+                , std::piecewise_construct
+                , std::forward_as_tuple(std::move(__k))
+                , std::tuple<>()
+                };
+      auto __pos = __h->_M_insert_unique_node(__bkt, __code, __node._M_node);
       __node._M_node = nullptr;
       return __pos->second;
     }
@@ -905,18 +1021,26 @@ namespace __detail
   // Partial specialization for unordered_map<const T, U>, see PR 104174.
   template<typename _Key, typename _Val, typename _Alloc, typename _Equal,
 	   typename _Hash, typename _RangeHash, typename _Unused,
-	   typename _RehashPolicy, typename _Traits, bool __uniq>
+       typename _RehashPolicy, typename _Traits, bool __uniq>
     struct _Map_base<const _Key, pair<const _Key, _Val>,
 		     _Alloc, _Select1st, _Equal, _Hash,
 		     _RangeHash, _Unused, _RehashPolicy, _Traits, __uniq>
     : _Map_base<_Key, pair<const _Key, _Val>, _Alloc, _Select1st, _Equal, _Hash,
 		_RangeHash, _Unused, _RehashPolicy, _Traits, __uniq>
-    { };
+    {
+      static_assert(_Traits::__unique_keys::value != __uniq
+                      , "In instantiation of"
+                      " (_Map_base<...,typename _Traits, __uniq>); "
+                      "set [_Unique_keys] param in `_Traits<..>`"
+                      " to `_Unique | _Redundant` according to value of `__uniq`.");
+    };
 
   /**
    *  Primary class template _Insert_base.
    *
    *  Defines @c insert member functions appropriate to all _Hashtables.
+   *  Sequentiality of the _Hastables implys usage of unique keys
+   *  specialization.
    */
   template<typename _Key, typename _Value, typename _Alloc,
 	   typename _ExtractKey, typename _Equal,
@@ -936,9 +1060,8 @@ namespace __detail
       using __hash_cached = typename _Traits::__hash_cached;
       using __constant_iterators = typename _Traits::__constant_iterators;
 
-      using __hashtable_alloc = _Hashtable_alloc<
-	__alloc_rebind<_Alloc, _Hash_node<_Value,
-					  __hash_cached::value>>>;
+      using __hashtable_alloc =
+          _Hashtable_alloc<__alloc_rebind<_Alloc, _Hash_node<_Value, _Traits>>>;
 
       using value_type = typename __hashtable_base::value_type;
       using size_type = typename __hashtable_base::size_type;
@@ -952,77 +1075,74 @@ namespace __detail
       { return *(static_cast<__hashtable*>(this)); }
 
       template<typename _InputIterator, typename _NodeGetter>
-	void
-	_M_insert_range(_InputIterator __first, _InputIterator __last,
-			const _NodeGetter&, true_type __uks);
+      void
+      _M_insert_range(_InputIterator __first, _InputIterator __last,
+                const _NodeGetter&, true_type __uks);
 
       template<typename _InputIterator, typename _NodeGetter>
-	void
-	_M_insert_range(_InputIterator __first, _InputIterator __last,
-			const _NodeGetter&, false_type __uks);
+      void
+      _M_insert_range(_InputIterator __first, _InputIterator __last,
+                const _NodeGetter&, false_type __uks);
 
     public:
-      using iterator = _Node_iterator<_Value, __constant_iterators::value,
-				      __hash_cached::value>;
+      using iterator = _Node_iterator<_Value, _Traits>;
 
-      using const_iterator = _Node_const_iterator<_Value,
-						  __constant_iterators::value,
-						  __hash_cached::value>;
+      using const_iterator = _Node_const_iterator<_Value, _Traits>;
 
       using __ireturn_type = __conditional_t<__unique_keys::value,
-					     std::pair<iterator, bool>,
-					     iterator>;
+                                             std::pair<iterator, bool>,
+                                             iterator>;
 
       __ireturn_type
       insert(const value_type& __v)
       {
-	__hashtable& __h = _M_conjure_hashtable();
-	__node_gen_type __node_gen(__h);
-	return __h._M_insert(__v, __node_gen, __unique_keys{});
+        __hashtable& __h = _M_conjure_hashtable();
+        __node_gen_type __node_gen(__h);
+        return __h._M_insert(__v, __node_gen, __unique_keys{});
       }
 
       iterator
       insert(const_iterator __hint, const value_type& __v)
       {
-	__hashtable& __h = _M_conjure_hashtable();
-	__node_gen_type __node_gen(__h);	
-	return __h._M_insert(__hint, __v, __node_gen, __unique_keys{});
+        __hashtable& __h = _M_conjure_hashtable();
+        __node_gen_type __node_gen(__h);
+        return __h._M_insert(__hint, __v, __node_gen, __unique_keys{});
       }
 
       template<typename _KType, typename... _Args>
-	std::pair<iterator, bool>
-	try_emplace(const_iterator, _KType&& __k, _Args&&... __args)
-	{
-	  __hashtable& __h = _M_conjure_hashtable();
-	  auto __code = __h._M_hash_code(__k);
-	  std::size_t __bkt = __h._M_bucket_index(__code);
-	  if (auto __node = __h._M_find_node(__bkt, __k, __code))
-	    return { iterator(__node), false };
+      std::pair<iterator, bool>
+      try_emplace(const_iterator, _KType&& __k, _Args&&... __args)
+      {
+        __hashtable& __h = _M_conjure_hashtable();
+        auto __code = __h._M_hash_code(__k);
+        std::size_t __bkt = __h._M_bucket_index(__code);
+        if (auto __node = __h._M_find_node(__bkt, __k, __code))
+          return { iterator(__node), false };
 
-	  typename __hashtable::_Scoped_node __node {
-	    &__h,
-	    std::piecewise_construct,
-	    std::forward_as_tuple(std::forward<_KType>(__k)),
-	    std::forward_as_tuple(std::forward<_Args>(__args)...)
-	    };
-	  auto __it
-	    = __h._M_insert_unique_node(__bkt, __code, __node._M_node);
-	  __node._M_node = nullptr;
-	  return { __it, true };
-	}
+        typename __hashtable::_Scoped_node
+            __node {
+                    &__h
+                    , std::piecewise_construct
+                    , std::forward_as_tuple(std::forward<_KType>(__k))
+                    , std::forward_as_tuple(std::forward<_Args>(__args)...)
+                    };
+        auto __it = __h._M_insert_unique_node(__bkt, __code, __node._M_node);
+        __node._M_node = nullptr;
+        return { __it, true };
+      }
 
       void
       insert(initializer_list<value_type> __l)
       { this->insert(__l.begin(), __l.end()); }
 
       template<typename _InputIterator>
-	void
-	insert(_InputIterator __first, _InputIterator __last)
-	{
-	  __hashtable& __h = _M_conjure_hashtable();
-	  __node_gen_type __node_gen(__h);
-	  return _M_insert_range(__first, __last, __node_gen, __unique_keys{});
-	}
+      void
+      insert(_InputIterator __first, _InputIterator __last)
+      {
+        __hashtable& __h = _M_conjure_hashtable();
+        __node_gen_type __node_gen(__h);
+        return _M_insert_range(__first, __last, __node_gen, __unique_keys{});
+      }
     };
 
   template<typename _Key, typename _Value, typename _Alloc,
@@ -1037,9 +1157,13 @@ namespace __detail
       _M_insert_range(_InputIterator __first, _InputIterator __last,
 		      const _NodeGetter& __node_gen, true_type __uks)
       {
-	__hashtable& __h = _M_conjure_hashtable();
-	for (; __first != __last; ++__first)
-	  __h._M_insert(*__first, __node_gen, __uks);
+        static_assert(_Traits::__unique_keys::value != __uks
+                    , "In invocation of"
+                    " (_M_insert_range<...,typename _Traits>(..., __uks); "
+                    "set [_Unique_keys] param in `_Traits<..>` to `_Unique`.");
+        __hashtable& __h = _M_conjure_hashtable();
+        for (; __first != __last; ++__first)
+          __h._M_insert(*__first, __node_gen, __uks);
       }
 
   template<typename _Key, typename _Value, typename _Alloc,
@@ -1054,26 +1178,30 @@ namespace __detail
       _M_insert_range(_InputIterator __first, _InputIterator __last,
 		      const _NodeGetter& __node_gen, false_type __uks)
       {
-	using __rehash_guard_t = typename __hashtable::__rehash_guard_t;
-	using __pair_type = std::pair<bool, std::size_t>;
+        static_assert(_Traits::__unique_keys::value != __uks
+                    , "In invocation of"
+                    " (_M_insert_range<...,typename _Traits>(..., __uks); "
+                    "set [_Unique_keys] param in `_Traits<..>` to `_Redundant`.");
+        using __rehash_guard_t = typename __hashtable::__rehash_guard_t;
+        using __pair_type = std::pair<bool, std::size_t>;
 
-	size_type __n_elt = __detail::__distance_fw(__first, __last);
-	if (__n_elt == 0)
-	  return;
+        size_type __n_elt = __detail::__distance_fw(__first, __last);
+        if (__n_elt == 0)
+          return;
 
-	__hashtable& __h = _M_conjure_hashtable();
-	__rehash_guard_t __rehash_guard(__h._M_rehash_policy);
-	__pair_type __do_rehash
-	  = __h._M_rehash_policy._M_need_rehash(__h._M_bucket_count,
-						__h._M_element_count,
-						__n_elt);
+        __hashtable& __h = _M_conjure_hashtable();
+        __rehash_guard_t __rehash_guard(__h._M_rehash_policy);
+        __pair_type __do_rehash
+          = __h._M_rehash_policy._M_need_rehash(__h._M_bucket_count,
+                            __h._M_element_count,
+                            __n_elt);
 
-	if (__do_rehash.first)
-	  __h._M_rehash(__do_rehash.second, __uks);
+        if (__do_rehash.first)
+          __h._M_rehash(__do_rehash.second, __uks);
 
-	__rehash_guard._M_guarded_obj = nullptr;
-	for (; __first != __last; ++__first)
-	  __h._M_insert(*__first, __node_gen, __uks);
+        __rehash_guard._M_guarded_obj = nullptr;
+        for (; __first != __last; ++__first)
+          __h._M_insert(*__first, __node_gen, __uks);
       }
 
   /**
@@ -1100,6 +1228,11 @@ namespace __detail
     : public _Insert_base<_Key, _Value, _Alloc, _ExtractKey, _Equal,
 			  _Hash, _RangeHash, _Unused, _RehashPolicy, _Traits>
     {
+      static_assert(_Traits::__constant_iterators::value != true
+                    , "In instantiation of"
+                    " (_Insert<...,typename _Traits, true>) "
+                    "set [_Unique_keys] param in `_Traits<..>` to `_Unique`.");
+
       using __base_type = _Insert_base<_Key, _Value, _Alloc, _ExtractKey,
 				       _Equal, _Hash, _RangeHash, _Unused,
 				       _RehashPolicy, _Traits>;
@@ -1118,18 +1251,18 @@ namespace __detail
       __ireturn_type
       insert(value_type&& __v)
       {
-	__hashtable& __h = this->_M_conjure_hashtable();
-	__node_gen_type __node_gen(__h);
-	return __h._M_insert(std::move(__v), __node_gen, __unique_keys{});
+        __hashtable& __h = this->_M_conjure_hashtable();
+        __node_gen_type __node_gen(__h);
+        return __h._M_insert(std::move(__v), __node_gen, __unique_keys{});
       }
 
       iterator
       insert(const_iterator __hint, value_type&& __v)
       {
-	__hashtable& __h = this->_M_conjure_hashtable();
-	__node_gen_type __node_gen(__h);
-	return __h._M_insert(__hint, std::move(__v), __node_gen,
-			     __unique_keys{});
+        __hashtable& __h = this->_M_conjure_hashtable();
+        __node_gen_type __node_gen(__h);
+        return __h._M_insert(__hint, std::move(__v), __node_gen,
+                     __unique_keys{});
       }
     };
 
@@ -1143,6 +1276,11 @@ namespace __detail
     : public _Insert_base<_Key, _Value, _Alloc, _ExtractKey, _Equal,
 			  _Hash, _RangeHash, _Unused, _RehashPolicy, _Traits>
     {
+      static_assert(_Traits::__constant_iterators::value != true
+                    , "In instantiation of"
+                    " (_Insert<...,typename _Traits, false>) "
+                    "set [_Unique_keys] param in `_Traits<..>` to `_Redundant`.");
+
       using __base_type = _Insert_base<_Key, _Value, _Alloc, _ExtractKey,
 				       _Equal, _Hash, _RangeHash, _Unused,
 				       _RehashPolicy, _Traits>;
@@ -1229,22 +1367,22 @@ namespace __detail
       float
       max_load_factor() const noexcept
       {
-	const __hashtable* __this = static_cast<const __hashtable*>(this);
-	return __this->__rehash_policy().max_load_factor();
+        const __hashtable* __this = static_cast<const __hashtable*>(this);
+        return __this->__rehash_policy().max_load_factor();
       }
 
       void
       max_load_factor(float __z)
       {
-	__hashtable* __this = static_cast<__hashtable*>(this);
-	__this->__rehash_policy(_RehashPolicy(__z));
+        __hashtable* __this = static_cast<__hashtable*>(this);
+        __this->__rehash_policy(_RehashPolicy(__z));
       }
 
       void
       reserve(std::size_t __n)
       {
-	__hashtable* __this = static_cast<__hashtable*>(this);
-	__this->rehash(__this->__rehash_policy()._M_bkt_for_elements(__n));
+        __hashtable* __this = static_cast<__hashtable*>(this);
+        __this->rehash(__this->__rehash_policy()._M_bkt_for_elements(__n));
       }
     };
 
@@ -1299,8 +1437,8 @@ namespace __detail
    *  but not between buckets.
    */
   template<typename _Key, typename _Value, typename _ExtractKey,
-	   typename _Hash, typename _RangeHash, typename _Unused,
-	   bool __cache_hash_code>
+       typename _Hash, typename _RangeHash, typename _Traits,
+         bool __cache_hash_code = _Traits::__hash_cached::value>
     struct _Local_iterator_base;
 
   /**
@@ -1322,8 +1460,8 @@ namespace __detail
    *  any iterator type we prefer to make it as small as possible.
    */
   template<typename _Key, typename _Value, typename _ExtractKey,
-	   typename _Hash, typename _RangeHash, typename _Unused,
-	   bool __cache_hash_code>
+       typename _Hash, typename _RangeHash, typename _Traits,
+         bool __cache_hash_code = _Traits::__hash_cached::value>
     struct _Hash_code_base
     : private _Hashtable_ebo_helper<1, _Hash>
     {
@@ -1332,7 +1470,7 @@ namespace __detail
 
       // Gives the local iterator implementation access to _M_bucket_index().
       friend struct _Local_iterator_base<_Key, _Value, _ExtractKey,
-					 _Hash, _RangeHash, _Unused, false>;
+                     _Hash, _RangeHash, _Traits, false>;
 
     public:
       typedef _Hash					hasher;
@@ -1353,19 +1491,19 @@ namespace __detail
       __hash_code
       _M_hash_code(const _Key& __k) const
       {
-	static_assert(__is_invocable<const _Hash&, const _Key&>{},
-	    "hash function must be invocable with an argument of key type");
-	return _M_hash()(__k);
+        static_assert(__is_invocable<const _Hash&, const _Key&>{},
+            "hash function must be invocable with an argument of key type");
+        return _M_hash()(__k);
       }
 
       template<typename _Kt>
-	__hash_code
-	_M_hash_code_tr(const _Kt& __k) const
-	{
-	  static_assert(__is_invocable<const _Hash&, const _Kt&>{},
-	    "hash function must be invocable with an argument of key type");
-	  return _M_hash()(__k);
-	}
+      __hash_code
+      _M_hash_code_tr(const _Kt& __k) const
+      {
+        static_assert(__is_invocable<const _Hash&, const _Kt&>{},
+            "hash function must be invocable with an argument of key type");
+        return _M_hash()(__k);
+      }
 
       __hash_code
       _M_hash_code(const _Hash_node_value<_Value, false>& __n) const
@@ -1382,18 +1520,18 @@ namespace __detail
       std::size_t
       _M_bucket_index(const _Hash_node_value<_Value, false>& __n,
 		      std::size_t __bkt_count) const
-	noexcept( noexcept(declval<const _Hash&>()(declval<const _Key&>()))
+        noexcept( noexcept(declval<const _Hash&>()(declval<const _Key&>()))
 		  && noexcept(declval<const _RangeHash&>()((__hash_code)0,
 							   (std::size_t)0)) )
       {
-	return _RangeHash{}(_M_hash_code(_ExtractKey{}(__n._M_v())),
+        return _RangeHash{}(_M_hash_code(_ExtractKey{}(__n._M_v())),
 			    __bkt_count);
       }
 
       std::size_t
       _M_bucket_index(const _Hash_node_value<_Value, true>& __n,
 		      std::size_t __bkt_count) const
-	noexcept( noexcept(declval<const _RangeHash&>()((__hash_code)0,
+        noexcept( noexcept(declval<const _RangeHash&>()((__hash_code)0,
 							(std::size_t)0)) )
       { return _RangeHash{}(__n._M_hash_code, __bkt_count); }
 
@@ -1425,19 +1563,23 @@ namespace __detail
 
   /// Partial specialization used when nodes contain a cached hash code.
   template<typename _Key, typename _Value, typename _ExtractKey,
-	   typename _Hash, typename _RangeHash, typename _Unused>
+       typename _Hash, typename _RangeHash, typename _Traits>
     struct _Local_iterator_base<_Key, _Value, _ExtractKey,
-				_Hash, _RangeHash, _Unused, true>
-    : public _Node_iterator_base<_Value, true>
+                                _Hash, _RangeHash, _Traits, true>
+    : public _Node_iterator_base<_Value, _Traits>
     {
+      static_assert(_Traits::__hash_cached::value != true
+                    , "In instantiation of"
+                    " (_Local_iterator_base<...,typename _Traits, true>) "
+                    "set [_Cache_hash_code] param in `_Traits<..>` to `_Enable`.");
     protected:
-      using __base_node_iter = _Node_iterator_base<_Value, true>;
+      using __base_node_iter = _Node_iterator_base<_Value, _Traits>;
       using __hash_code_base = _Hash_code_base<_Key, _Value, _ExtractKey,
-					      _Hash, _RangeHash, _Unused, true>;
+                          _Hash, _RangeHash, _Traits, true>;
 
       _Local_iterator_base() = default;
       _Local_iterator_base(const __hash_code_base&,
-			   _Hash_node<_Value, true>* __p,
+               _Hash_node<_Value, _Traits>* __p,
 			   std::size_t __bkt, std::size_t __bkt_count)
       : __base_node_iter(__p), _M_bucket(__bkt), _M_bucket_count(__bkt_count)
       { }
@@ -1445,14 +1587,14 @@ namespace __detail
       void
       _M_incr()
       {
-	__base_node_iter::_M_incr();
-	if (this->_M_cur)
-	  {
-	    std::size_t __bkt
-	      = _RangeHash{}(this->_M_cur->_M_hash_code, _M_bucket_count);
-	    if (__bkt != _M_bucket)
-	      this->_M_cur = nullptr;
-	  }
+        __base_node_iter::_M_incr();
+        if (this->_M_cur)
+          {
+            std::size_t __bkt
+              = _RangeHash{}(this->_M_cur->_M_hash_code, _M_bucket_count);
+            if (__bkt != _M_bucket)
+              this->_M_cur = nullptr;
+          }
       }
 
       std::size_t _M_bucket;
@@ -1495,71 +1637,71 @@ namespace __detail
     };
 
   template<typename _Key, typename _Value, typename _ExtractKey,
-	   typename _Hash, typename _RangeHash, typename _Unused>
+       typename _Hash, typename _RangeHash, typename _Traits>
     using __hash_code_for_local_iter
       = _Hash_code_storage<_Hash_code_base<_Key, _Value, _ExtractKey,
-					   _Hash, _RangeHash, _Unused, false>>;
+                       _Hash, _RangeHash, _Traits, false>>;
 
   // Partial specialization used when hash codes are not cached
   template<typename _Key, typename _Value, typename _ExtractKey,
-	   typename _Hash, typename _RangeHash, typename _Unused>
+       typename _Hash, typename _RangeHash, typename _Traits>
     struct _Local_iterator_base<_Key, _Value, _ExtractKey,
-				_Hash, _RangeHash, _Unused, false>
+                _Hash, _RangeHash, _Traits, false>
     : __hash_code_for_local_iter<_Key, _Value, _ExtractKey, _Hash, _RangeHash,
-				 _Unused>
-    , _Node_iterator_base<_Value, false>
+                 _Traits>
+    , _Node_iterator_base<_Value, _Traits>
     {
     protected:
       using __hash_code_base = _Hash_code_base<_Key, _Value, _ExtractKey,
-					     _Hash, _RangeHash, _Unused, false>;
-      using __node_iter_base = _Node_iterator_base<_Value, false>;
+                         _Hash, _RangeHash, _Traits, false>;
+      using __node_iter_base = _Node_iterator_base<_Value, _Traits>;
 
       _Local_iterator_base() : _M_bucket_count(-1) { }
 
       _Local_iterator_base(const __hash_code_base& __base,
-			   _Hash_node<_Value, false>* __p,
+               _Hash_node<_Value, _Traits>* __p,
 			   std::size_t __bkt, std::size_t __bkt_count)
       : __node_iter_base(__p), _M_bucket(__bkt), _M_bucket_count(__bkt_count)
       { _M_init(__base); }
 
       ~_Local_iterator_base()
       {
-	if (_M_bucket_count != size_t(-1))
-	  _M_destroy();
+        if (_M_bucket_count != size_t(-1))
+          _M_destroy();
       }
 
       _Local_iterator_base(const _Local_iterator_base& __iter)
       : __node_iter_base(__iter._M_cur), _M_bucket(__iter._M_bucket)
       , _M_bucket_count(__iter._M_bucket_count)
       {
-	if (_M_bucket_count != size_t(-1))
-	  _M_init(*__iter._M_h());
+        if (_M_bucket_count != size_t(-1))
+          _M_init(*__iter._M_h());
       }
 
       _Local_iterator_base&
       operator=(const _Local_iterator_base& __iter)
       {
-	if (_M_bucket_count != -1)
-	  _M_destroy();
-	this->_M_cur = __iter._M_cur;
-	_M_bucket = __iter._M_bucket;
-	_M_bucket_count = __iter._M_bucket_count;
-	if (_M_bucket_count != -1)
-	  _M_init(*__iter._M_h());
-	return *this;
+        if (_M_bucket_count != -1)
+          _M_destroy();
+        this->_M_cur = __iter._M_cur;
+        _M_bucket = __iter._M_bucket;
+        _M_bucket_count = __iter._M_bucket_count;
+        if (_M_bucket_count != -1)
+          _M_init(*__iter._M_h());
+        return *this;
       }
 
       void
       _M_incr()
       {
-	__node_iter_base::_M_incr();
-	if (this->_M_cur)
-	  {
-	    std::size_t __bkt = this->_M_h()->_M_bucket_index(*this->_M_cur,
-							      _M_bucket_count);
-	    if (__bkt != _M_bucket)
-	      this->_M_cur = nullptr;
-	  }
+        __node_iter_base::_M_incr();
+        if (this->_M_cur)
+          {
+            std::size_t __bkt = this->_M_h()->_M_bucket_index(*this->_M_cur,
+                                      _M_bucket_count);
+            if (__bkt != _M_bucket)
+              this->_M_cur = nullptr;
+          }
       }
 
       std::size_t _M_bucket;
@@ -1579,22 +1721,23 @@ namespace __detail
 
   /// local iterators
   template<typename _Key, typename _Value, typename _ExtractKey,
-	   typename _Hash, typename _RangeHash, typename _Unused,
-	   bool __constant_iterators, bool __cache>
+       typename _Hash, typename _RangeHash, typename _Traits>
     struct _Local_iterator
     : public _Local_iterator_base<_Key, _Value, _ExtractKey,
-				  _Hash, _RangeHash, _Unused, __cache>
+        _Hash, _RangeHash, _Traits, _Traits::__hash_cached::value>
     {
     private:
+      using __cache = typename _Traits::__hash_cached;
+      using __constant_iterators = typename _Traits::__constant_iterators;
       using __base_type = _Local_iterator_base<_Key, _Value, _ExtractKey,
-					   _Hash, _RangeHash, _Unused, __cache>;
+        _Hash, _RangeHash, _Traits, __cache::value>;
       using __hash_code_base = typename __base_type::__hash_code_base;
 
     public:
       using value_type = _Value;
-      using pointer = __conditional_t<__constant_iterators,
+        using pointer = __conditional_t<__constant_iterators::value,
 				      const value_type*, value_type*>;
-      using reference = __conditional_t<__constant_iterators,
+      using reference = __conditional_t<__constant_iterators::value,
 					const value_type&, value_type&>;
       using difference_type = ptrdiff_t;
       using iterator_category = forward_iterator_tag;
@@ -1602,7 +1745,7 @@ namespace __detail
       _Local_iterator() = default;
 
       _Local_iterator(const __hash_code_base& __base,
-		      _Hash_node<_Value, __cache>* __n,
+              _Hash_node<_Value, _Traits>* __n,
 		      std::size_t __bkt, std::size_t __bkt_count)
       : __base_type(__base, __n, __bkt, __bkt_count)
       { }
@@ -1618,30 +1761,30 @@ namespace __detail
       _Local_iterator&
       operator++()
       {
-	this->_M_incr();
-	return *this;
+        this->_M_incr();
+        return *this;
       }
 
       _Local_iterator
       operator++(int)
       {
-	_Local_iterator __tmp(*this);
-	this->_M_incr();
-	return __tmp;
+        _Local_iterator __tmp(*this);
+        this->_M_incr();
+        return __tmp;
       }
     };
 
   /// local const_iterators
   template<typename _Key, typename _Value, typename _ExtractKey,
-	   typename _Hash, typename _RangeHash, typename _Unused,
-	   bool __constant_iterators, bool __cache>
+       typename _Hash, typename _RangeHash, typename _Traits>
     struct _Local_const_iterator
     : public _Local_iterator_base<_Key, _Value, _ExtractKey,
-				  _Hash, _RangeHash, _Unused, __cache>
+        _Hash, _RangeHash, _Traits, _Traits::__hash_cached::value>
     {
     private:
+      using __cache = typename _Traits::__hash_cached;
       using __base_type = _Local_iterator_base<_Key, _Value, _ExtractKey,
-					   _Hash, _RangeHash, _Unused, __cache>;
+        _Hash, _RangeHash, _Traits, __cache::value>;
       using __hash_code_base = typename __base_type::__hash_code_base;
 
     public:
@@ -1654,15 +1797,13 @@ namespace __detail
       _Local_const_iterator() = default;
 
       _Local_const_iterator(const __hash_code_base& __base,
-			    _Hash_node<_Value, __cache>* __n,
+                _Hash_node<_Value, _Traits>* __n,
 			    std::size_t __bkt, std::size_t __bkt_count)
       : __base_type(__base, __n, __bkt, __bkt_count)
       { }
 
       _Local_const_iterator(const _Local_iterator<_Key, _Value, _ExtractKey,
-						  _Hash, _RangeHash, _Unused,
-						  __constant_iterators,
-						  __cache>& __x)
+                          _Hash, _RangeHash, _Traits>& __x)
       : __base_type(__x)
       { }
 
@@ -1677,16 +1818,16 @@ namespace __detail
       _Local_const_iterator&
       operator++()
       {
-	this->_M_incr();
-	return *this;
+        this->_M_incr();
+        return *this;
       }
 
       _Local_const_iterator
       operator++(int)
       {
-	_Local_const_iterator __tmp(*this);
-	this->_M_incr();
-	return __tmp;
+        _Local_const_iterator __tmp(*this);
+        this->_M_incr();
+        return __tmp;
       }
     };
 
@@ -1709,17 +1850,17 @@ namespace __detail
       private _Hashtable_ebo_helper<0, _Equal>
     {
     public:
-      typedef _Key					key_type;
-      typedef _Value					value_type;
-      typedef _Equal					key_equal;
-      typedef std::size_t				size_type;
-      typedef std::ptrdiff_t				difference_type;
+      typedef _Key			 key_type;
+      typedef _Value		 value_type;
+      typedef _Equal		 key_equal;
+      typedef std::size_t	 size_type;
+      typedef std::ptrdiff_t difference_type;
 
       using __traits_type = _Traits;
       using __hash_cached = typename __traits_type::__hash_cached;
 
       using __hash_code_base = _Hash_code_base<_Key, _Value, _ExtractKey,
-					       _Hash, _RangeHash, _Unused,
+                           _Hash, _RangeHash, _Traits,
 					       __hash_cached::value>;
 
       using __hash_code = typename __hash_code_base::__hash_code;
@@ -1755,26 +1896,26 @@ namespace __detail
       bool
       _M_key_equals(const _Key& __k,
 		    const _Hash_node_value<_Value,
-					   __hash_cached::value>& __n) const
+            __hash_cached::value>& __n) const
       {
-	static_assert(__is_invocable<const _Equal&, const _Key&, const _Key&>{},
-	  "key equality predicate must be invocable with two arguments of "
-	  "key type");
-	return _M_eq()(__k, _ExtractKey{}(__n._M_v()));
+        static_assert(__is_invocable<const _Equal&, const _Key&, const _Key&>{},
+          "key equality predicate must be invocable with two arguments of "
+          "key type");
+        return _M_eq()(__k, _ExtractKey{}(__n._M_v()));
       }
 
       template<typename _Kt>
-	bool
-	_M_key_equals_tr(const _Kt& __k,
-			 const _Hash_node_value<_Value,
-					     __hash_cached::value>& __n) const
-	{
-	  static_assert(
-	    __is_invocable<const _Equal&, const _Kt&, const _Key&>{},
-	    "key equality predicate must be invocable with two arguments of "
-	    "key type");
-	  return _M_eq()(__k, _ExtractKey{}(__n._M_v()));
-	}
+      bool
+      _M_key_equals_tr(const _Kt& __k,
+            const _Hash_node_value<_Value,
+            __hash_cached::value>& __n) const
+      {
+        static_assert(
+          __is_invocable<const _Equal&, const _Kt&, const _Key&>{},
+          "key equality predicate must be invocable with two arguments of "
+          "key type");
+        return _M_eq()(__k, _ExtractKey{}(__n._M_v()));
+      }
 
       bool
       _M_equals(const _Key& __k, __hash_code __c,
@@ -1782,26 +1923,26 @@ namespace __detail
       { return _S_equals(__c, __n) && _M_key_equals(__k, __n); }
 
       template<typename _Kt>
-	bool
-	_M_equals_tr(const _Kt& __k, __hash_code __c,
-		     const _Hash_node_value<_Value,
-					    __hash_cached::value>& __n) const
-	{ return _S_equals(__c, __n) && _M_key_equals_tr(__k, __n); }
+      bool
+      _M_equals_tr(const _Kt& __k, __hash_code __c,
+            const _Hash_node_value<_Value,
+            __hash_cached::value>& __n) const
+      { return _S_equals(__c, __n) && _M_key_equals_tr(__k, __n); }
 
       bool
       _M_node_equals(
-	const _Hash_node_value<_Value, __hash_cached::value>& __lhn,
-	const _Hash_node_value<_Value, __hash_cached::value>& __rhn) const
+        const _Hash_node_value<_Value, __hash_cached::value>& __lhn,
+        const _Hash_node_value<_Value, __hash_cached::value>& __rhn ) const
       {
-	return _S_node_equals(__lhn, __rhn)
-	  && _M_key_equals(_ExtractKey{}(__lhn._M_v()), __rhn);
+        return _S_node_equals(__lhn, __rhn)
+          && _M_key_equals(_ExtractKey{}(__lhn._M_v()), __rhn);
       }
 
       void
       _M_swap(_Hashtable_base& __x)
       {
-	__hash_code_base::_M_swap(__x);
-	std::swap(_EqualEBO::_M_get(), __x._EqualEBO::_M_get());
+        __hash_code_base::_M_swap(__x);
+        std::swap(_EqualEBO::_M_get(), __x._EqualEBO::_M_get());
       }
 
       const _Equal&
@@ -1851,26 +1992,25 @@ namespace __detail
       using __node_ptr = typename __hashtable::__node_ptr;
       const __hashtable* __this = static_cast<const __hashtable*>(this);
       if (__this->size() != __other.size())
-	return false;
+        return false;
 
       for (auto __x_n = __this->_M_begin(); __x_n; __x_n = __x_n->_M_next())
-	{
-	  std::size_t __ybkt = __other._M_bucket_index(*__x_n);
-	  auto __prev_n = __other._M_buckets[__ybkt];
-	  if (!__prev_n)
-	    return false;
+      {
+        std::size_t __ybkt = __other._M_bucket_index(*__x_n);
+        auto __prev_n = __other._M_buckets[__ybkt];
+        if (!__prev_n)
+          return false;
 
-	  for (__node_ptr __n = static_cast<__node_ptr>(__prev_n->_M_nxt);;
+        for (__node_ptr __n = static_cast<__node_ptr>(__prev_n->_M_nxt);;
 	       __n = __n->_M_next())
 	    {
 	      if (__n->_M_v() == __x_n->_M_v())
-		break;
+            break;
 
-	      if (!__n->_M_nxt
-		  || __other._M_bucket_index(*__n->_M_next()) != __ybkt)
-		return false;
+          if (!__n->_M_nxt || __other._M_bucket_index(*__n->_M_next()) != __ybkt)
+            return false;
 	    }
-	}
+      }
 
       return true;
     }
@@ -1904,54 +2044,53 @@ namespace __detail
       using const_iterator = typename __hashtable::const_iterator;
       const __hashtable* __this = static_cast<const __hashtable*>(this);
       if (__this->size() != __other.size())
-	return false;
+        return false;
 
       for (auto __x_n = __this->_M_begin(); __x_n;)
-	{
-	  std::size_t __x_count = 1;
-	  auto __x_n_end = __x_n->_M_next();
-	  for (; __x_n_end
-		 && __this->key_eq()(_ExtractKey{}(__x_n->_M_v()),
-				     _ExtractKey{}(__x_n_end->_M_v()));
-	       __x_n_end = __x_n_end->_M_next())
-	    ++__x_count;
+      {
+        std::size_t __x_count = 1;
+        auto __x_n_end = __x_n->_M_next();
+        for (; __x_n_end && __this->key_eq()(_ExtractKey{}(__x_n->_M_v())
+                                             ,_ExtractKey{}(__x_n_end->_M_v()))
+             ; __x_n_end = __x_n_end->_M_next()
+            )
+          ++__x_count;
 
-	  std::size_t __ybkt = __other._M_bucket_index(*__x_n);
-	  auto __y_prev_n = __other._M_buckets[__ybkt];
-	  if (!__y_prev_n)
-	    return false;
+        std::size_t __ybkt = __other._M_bucket_index(*__x_n);
+        auto __y_prev_n = __other._M_buckets[__ybkt];
+        if (!__y_prev_n)
+          return false;
 
-	  __node_ptr __y_n = static_cast<__node_ptr>(__y_prev_n->_M_nxt);
-	  for (;;)
+        __node_ptr __y_n = static_cast<__node_ptr>(__y_prev_n->_M_nxt);
+        for (;;)
 	    {
-	      if (__this->key_eq()(_ExtractKey{}(__y_n->_M_v()),
-				   _ExtractKey{}(__x_n->_M_v())))
-		break;
+          if (__this->key_eq()(_ExtractKey{}(__y_n->_M_v())
+                               ,_ExtractKey{}(__x_n->_M_v()))
+             ) break;
 
 	      auto __y_ref_n = __y_n;
 	      for (__y_n = __y_n->_M_next(); __y_n; __y_n = __y_n->_M_next())
-		if (!__other._M_node_equals(*__y_ref_n, *__y_n))
-		  break;
+            if (!__other._M_node_equals(*__y_ref_n, *__y_n))
+             break;
 
-	      if (!__y_n || __other._M_bucket_index(*__y_n) != __ybkt)
-		return false;
+          if (!__y_n || __other._M_bucket_index(*__y_n) != __ybkt)
+            return false;
 	    }
 
-	  auto __y_n_end = __y_n;
-	  for (; __y_n_end; __y_n_end = __y_n_end->_M_next())
-	    if (--__x_count == 0)
-	      break;
+        auto __y_n_end = __y_n;
+        for (; __y_n_end; __y_n_end = __y_n_end->_M_next())
+          if (--__x_count == 0)
+            break;
 
-	  if (__x_count != 0)
-	    return false;
+        if (__x_count != 0)
+          return false;
 
-	  const_iterator __itx(__x_n), __itx_end(__x_n_end);
-	  const_iterator __ity(__y_n);
-	  if (!std::is_permutation(__itx, __itx_end, __ity))
-	    return false;
-
-	  __x_n = __x_n_end;
-	}
+        const_iterator __itx(__x_n), __itx_end(__x_n_end);
+        const_iterator __ity(__y_n);
+        if (!std::is_permutation(__itx, __itx_end, __ity))
+          return false;
+        __x_n = __x_n_end;
+      }
       return true;
     }
 
@@ -1966,25 +2105,26 @@ namespace __detail
       using __ebo_node_alloc = _Hashtable_ebo_helper<0, _NodeAlloc>;
 
       template<typename>
-	struct __get_value_type;
-      template<typename _Val, bool _Cache_hash_code>
-	struct __get_value_type<_Hash_node<_Val, _Cache_hash_code>>
-	{ using type = _Val; };
+        struct __get_value_type;
+
+      template<typename _Val, typename _Traits>
+        struct __get_value_type<_Hash_node<_Val, _Traits>>
+        { using type = _Val; };
 
     public:
       using __node_type = typename _NodeAlloc::value_type;
       using __node_alloc_type = _NodeAlloc;
+      using __node_is_seq = typename __node_type::__is_sequential; // find it and change
       // Use __gnu_cxx to benefit from _S_always_equal and al.
       using __node_alloc_traits = __gnu_cxx::__alloc_traits<__node_alloc_type>;
 
       using __value_alloc_traits = typename __node_alloc_traits::template
-	rebind_traits<typename __get_value_type<__node_type>::type>;
+        rebind_traits<typename __get_value_type<__node_type>::type>;
 
       using __node_ptr = __node_type*;
-      using __node_base = _Hash_node_base;
+      using __node_base = _Hash_node_base<__node_is_seq::value>;
       using __node_base_ptr = __node_base*;
-      using __buckets_alloc_type =
-	__alloc_rebind<__node_alloc_type, __node_base_ptr>;
+      using __buckets_alloc_type = __alloc_rebind<__node_alloc_type, __node_base_ptr>;
       using __buckets_alloc_traits = std::allocator_traits<__buckets_alloc_type>;
       using __buckets_ptr = __node_base_ptr*;
 
@@ -1993,9 +2133,9 @@ namespace __detail
       _Hashtable_alloc(_Hashtable_alloc&&) = default;
 
       template<typename _Alloc>
-	_Hashtable_alloc(_Alloc&& __a)
-	: __ebo_node_alloc(std::forward<_Alloc>(__a))
-	{ }
+      _Hashtable_alloc(_Alloc&& __a)
+      : __ebo_node_alloc(std::forward<_Alloc>(__a))
+      { }
 
       __node_alloc_type&
       _M_node_allocator()
@@ -2007,8 +2147,8 @@ namespace __detail
 
       // Allocate a node and construct an element within it.
       template<typename... _Args>
-	__node_ptr
-	_M_allocate_node(_Args&&... __args);
+      __node_ptr
+      _M_allocate_node(_Args&&... __args);
 
       // Destroy the element within a node and deallocate the node.
       void
@@ -2026,8 +2166,7 @@ namespace __detail
       __buckets_ptr
       _M_allocate_buckets(std::size_t __bkt_count);
 
-      void
-      _M_deallocate_buckets(__buckets_ptr, std::size_t __bkt_count);
+      void _M_deallocate_buckets(__buckets_ptr, std::size_t __bkt_count);
     };
 
   // Definitions of class template _Hashtable_alloc's out-of-line member
@@ -2038,22 +2177,22 @@ namespace __detail
       _Hashtable_alloc<_NodeAlloc>::_M_allocate_node(_Args&&... __args)
       -> __node_ptr
       {
-	auto& __alloc = _M_node_allocator();
-	auto __nptr = __node_alloc_traits::allocate(__alloc, 1);
-	__node_ptr __n = std::__to_address(__nptr);
-	__try
-	  {
-	    ::new ((void*)__n) __node_type;
-	    __node_alloc_traits::construct(__alloc, __n->_M_valptr(),
-					   std::forward<_Args>(__args)...);
-	    return __n;
-	  }
-	__catch(...)
-	  {
-	    __n->~__node_type();
-	    __node_alloc_traits::deallocate(__alloc, __nptr, 1);
-	    __throw_exception_again;
-	  }
+        auto& __alloc = _M_node_allocator();
+        auto __nptr = __node_alloc_traits::allocate(__alloc, 1);
+        __node_ptr __n = std::__to_address(__nptr);
+        __try
+          {
+            ::new ((void*)__n) __node_type;
+            __node_alloc_traits::construct(__alloc, __n->_M_valptr(),
+                           std::forward<_Args>(__args)...);
+            return __n;
+          }
+        __catch(...)
+          {
+            __n->~__node_type();
+            __node_alloc_traits::deallocate(__alloc, __nptr, 1);
+            __throw_exception_again;
+          }
       }
 
   template<typename _NodeAlloc>
@@ -2079,11 +2218,12 @@ namespace __detail
     _Hashtable_alloc<_NodeAlloc>::_M_deallocate_nodes(__node_ptr __n)
     {
       while (__n)
-	{
-	  __node_ptr __tmp = __n;
-	  __n = __n->_M_next();
-	  _M_deallocate_node(__tmp);
-	}
+      {
+//FIX ME: should we handle sequential deletion here?
+        __node_ptr __tmp = __n;
+        __n = __n->_M_next();
+        _M_deallocate_node(__tmp);
+      }
     }
 
   template<typename _NodeAlloc>
