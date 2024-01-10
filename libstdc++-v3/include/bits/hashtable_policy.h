@@ -46,7 +46,7 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
 
   template<typename _Key, typename _Value, typename _Alloc,
 	   typename _ExtractKey, typename _Equal,
-	   typename _Hash, typename _RangeHash, typename _Unused,
+	   typename _Hash, typename _RangeHash, __detail::_access_type _Access,
 	   typename _RehashPolicy, typename _Traits>
     class _Hashtable;
 
@@ -197,8 +197,7 @@ namespace __detail
     private:
       using __node_alloc_type = _NodeAlloc;
       using __hashtable_alloc = _Hashtable_alloc<__node_alloc_type>;
-      using __node_alloc_traits =
-	typename __hashtable_alloc::__node_alloc_traits;
+      using __node_alloc_traits = typename __hashtable_alloc::__node_alloc_traits;
 
     public:
       using __node_ptr = typename __hashtable_alloc::__node_ptr;
@@ -1372,7 +1371,7 @@ namespace __detail
    *  but not between buckets.
    */
   template<typename _Key, typename _Value, typename _ExtractKey,
-	   typename _Hash, typename _RangeHash, typename _Unused,
+	   typename _Hash, typename _RangeHash, _access_type _Access,
 	   bool __cache_hash_code>
     struct _Local_iterator_base;
 
@@ -1395,7 +1394,7 @@ namespace __detail
    *  any iterator type we prefer to make it as small as possible.
    */
   template<typename _Key, typename _Value, typename _ExtractKey,
-	   typename _Hash, typename _RangeHash, typename _Unused,
+	   typename _Hash, typename _RangeHash, _access_type _Access,
 	   bool __cache_hash_code>
     struct _Hash_code_base
     : private _Hashtable_ebo_helper<1, _Hash>
@@ -1405,7 +1404,7 @@ namespace __detail
 
       // Gives the local iterator implementation access to _M_bucket_index().
       friend struct _Local_iterator_base<_Key, _Value, _ExtractKey,
-					 _Hash, _RangeHash, _Unused, false>;
+					 _Hash, _RangeHash, _Access, false>;
 
     public:
       typedef _Hash					hasher;
@@ -1495,19 +1494,19 @@ namespace __detail
 
   /// Partial specialization used when nodes contain a cached hash code.
   template<typename _Key, typename _Value, typename _ExtractKey,
-	   typename _Hash, typename _RangeHash, typename _Unused>
+	   typename _Hash, typename _RangeHash, _access_type _Access>
     struct _Local_iterator_base<_Key, _Value, _ExtractKey,
-				_Hash, _RangeHash, _Unused, true>
-    : public _Node_iterator_base<_Value, true>
+				_Hash, _RangeHash, _Access, true>
+    : public _Node_iterator_base<_Value, true, _Access>
     {
     protected:
-      using __base_node_iter = _Node_iterator_base<_Value, true>;
+      using __base_node_iter = _Node_iterator_base<_Value, true, _Access>;
       using __hash_code_base = _Hash_code_base<_Key, _Value, _ExtractKey,
-					      _Hash, _RangeHash, _Unused, true>;
+					      _Hash, _RangeHash, _Access, true>;
 
       _Local_iterator_base() = default;
       _Local_iterator_base(const __hash_code_base&,
-			   _Hash_node<_Value, true>* __p,
+			   _Hash_node<_Value, true, _Access>* __p,
 			   std::size_t __bkt, std::size_t __bkt_count)
       : __base_node_iter(__p), _M_bucket(__bkt), _M_bucket_count(__bkt_count)
       { }
@@ -1515,14 +1514,14 @@ namespace __detail
       void
       _M_incr()
       {
-	__base_node_iter::_M_incr();
-	if (this->_M_cur)
-	  {
-	    std::size_t __bkt
-	      = _RangeHash{}(this->_M_cur->_M_hash_code, _M_bucket_count);
-	    if (__bkt != _M_bucket)
-	      this->_M_cur = nullptr;
-	  }
+	      __base_node_iter::_M_incr();
+	      if (this->_M_cur)
+	        {
+	          std::size_t __bkt
+	            = _RangeHash{}(this->_M_cur->_M_hash_code, _M_bucket_count);
+	          if (__bkt != _M_bucket)
+	            this->_M_cur = nullptr;
+	        }
       }
 
       std::size_t _M_bucket;
@@ -1565,71 +1564,71 @@ namespace __detail
     };
 
   template<typename _Key, typename _Value, typename _ExtractKey,
-	   typename _Hash, typename _RangeHash, typename _Unused>
+	   typename _Hash, typename _RangeHash, _access_type _Access>
     using __hash_code_for_local_iter
       = _Hash_code_storage<_Hash_code_base<_Key, _Value, _ExtractKey,
-					   _Hash, _RangeHash, _Unused, false>>;
+					   _Hash, _RangeHash, _Access, false>>;
 
   // Partial specialization used when hash codes are not cached
   template<typename _Key, typename _Value, typename _ExtractKey,
-	   typename _Hash, typename _RangeHash, typename _Unused>
+	   typename _Hash, typename _RangeHash, _access_type _Access>
     struct _Local_iterator_base<_Key, _Value, _ExtractKey,
-				_Hash, _RangeHash, _Unused, false>
+				_Hash, _RangeHash, _Access, false>
     : __hash_code_for_local_iter<_Key, _Value, _ExtractKey, _Hash, _RangeHash,
-				 _Unused>
-    , _Node_iterator_base<_Value, false>
+				 _Access>
+    , _Node_iterator_base<_Value, false, _Access>
     {
     protected:
       using __hash_code_base = _Hash_code_base<_Key, _Value, _ExtractKey,
-					     _Hash, _RangeHash, _Unused, false>;
-      using __node_iter_base = _Node_iterator_base<_Value, false>;
+					     _Hash, _RangeHash, _Access, false>;
+      using __node_iter_base = _Node_iterator_base<_Value, false, _Access>;
 
       _Local_iterator_base() : _M_bucket_count(-1) { }
 
       _Local_iterator_base(const __hash_code_base& __base,
-			   _Hash_node<_Value, false>* __p,
+			   _Hash_node<_Value, false, _Access>* __p,
 			   std::size_t __bkt, std::size_t __bkt_count)
       : __node_iter_base(__p), _M_bucket(__bkt), _M_bucket_count(__bkt_count)
       { _M_init(__base); }
 
       ~_Local_iterator_base()
       {
-	if (_M_bucket_count != size_t(-1))
-	  _M_destroy();
+	      if (_M_bucket_count != size_t(-1))
+	        _M_destroy();
       }
 
       _Local_iterator_base(const _Local_iterator_base& __iter)
       : __node_iter_base(__iter._M_cur), _M_bucket(__iter._M_bucket)
       , _M_bucket_count(__iter._M_bucket_count)
       {
-	if (_M_bucket_count != size_t(-1))
-	  _M_init(*__iter._M_h());
+	      if (_M_bucket_count != size_t(-1))
+	        _M_init(*__iter._M_h());
       }
 
       _Local_iterator_base&
       operator=(const _Local_iterator_base& __iter)
       {
-	if (_M_bucket_count != -1)
-	  _M_destroy();
-	this->_M_cur = __iter._M_cur;
-	_M_bucket = __iter._M_bucket;
-	_M_bucket_count = __iter._M_bucket_count;
-	if (_M_bucket_count != -1)
-	  _M_init(*__iter._M_h());
-	return *this;
+	      if (_M_bucket_count != -1)
+	        _M_destroy();
+	      this->_M_cur = __iter._M_cur;
+	      _M_bucket = __iter._M_bucket;
+	      _M_bucket_count = __iter._M_bucket_count;
+	      if (_M_bucket_count != -1)
+	        _M_init(*__iter._M_h());
+	      return *this;
       }
 
       void
       _M_incr()
       {
-	__node_iter_base::_M_incr();
-	if (this->_M_cur)
-	  {
-	    std::size_t __bkt = this->_M_h()->_M_bucket_index(*this->_M_cur,
-							      _M_bucket_count);
-	    if (__bkt != _M_bucket)
-	      this->_M_cur = nullptr;
-	  }
+	      __node_iter_base::_M_incr();
+	      if (this->_M_cur)
+	        {
+	          std::size_t __bkt = this->_M_h()->_M_bucket_index(*this->_M_cur,
+							            _M_bucket_count);
+	          if (__bkt != _M_bucket)
+	            this->_M_cur = nullptr;
+	        }
       }
 
       std::size_t _M_bucket;
@@ -1649,15 +1648,15 @@ namespace __detail
 
   /// local iterators
   template<typename _Key, typename _Value, typename _ExtractKey,
-	   typename _Hash, typename _RangeHash, typename _Unused,
+	   typename _Hash, typename _RangeHash, _access_type _Access,
 	   bool __constant_iterators, bool __cache>
     struct _Local_iterator
     : public _Local_iterator_base<_Key, _Value, _ExtractKey,
-				  _Hash, _RangeHash, _Unused, __cache>
+				  _Hash, _RangeHash, _Access, __cache>
     {
     private:
       using __base_type = _Local_iterator_base<_Key, _Value, _ExtractKey,
-					   _Hash, _RangeHash, _Unused, __cache>;
+					   _Hash, _RangeHash, _Access, __cache>;
       using __hash_code_base = typename __base_type::__hash_code_base;
 
     public:
@@ -1672,7 +1671,7 @@ namespace __detail
       _Local_iterator() = default;
 
       _Local_iterator(const __hash_code_base& __base,
-		      _Hash_node<_Value, __cache>* __n,
+		      _Hash_node<_Value, __cache, _Access>* __n,
 		      std::size_t __bkt, std::size_t __bkt_count)
       : __base_type(__base, __n, __bkt, __bkt_count)
       { }
@@ -1688,30 +1687,30 @@ namespace __detail
       _Local_iterator&
       operator++()
       {
-	this->_M_incr();
-	return *this;
+	      this->_M_incr();
+	      return *this;
       }
 
       _Local_iterator
       operator++(int)
       {
-	_Local_iterator __tmp(*this);
-	this->_M_incr();
-	return __tmp;
+	      _Local_iterator __tmp(*this);
+	      this->_M_incr();
+	      return __tmp;
       }
     };
 
   /// local const_iterators
   template<typename _Key, typename _Value, typename _ExtractKey,
-	   typename _Hash, typename _RangeHash, typename _Unused,
+	   typename _Hash, typename _RangeHash, _access_type _Access,
 	   bool __constant_iterators, bool __cache>
     struct _Local_const_iterator
     : public _Local_iterator_base<_Key, _Value, _ExtractKey,
-				  _Hash, _RangeHash, _Unused, __cache>
+				  _Hash, _RangeHash, _Access, __cache>
     {
     private:
       using __base_type = _Local_iterator_base<_Key, _Value, _ExtractKey,
-					   _Hash, _RangeHash, _Unused, __cache>;
+					   _Hash, _RangeHash, _Access, __cache>;
       using __hash_code_base = typename __base_type::__hash_code_base;
 
     public:
@@ -1724,13 +1723,13 @@ namespace __detail
       _Local_const_iterator() = default;
 
       _Local_const_iterator(const __hash_code_base& __base,
-			    _Hash_node<_Value, __cache>* __n,
+			    _Hash_node<_Value, __cache, _Access>* __n,
 			    std::size_t __bkt, std::size_t __bkt_count)
       : __base_type(__base, __n, __bkt, __bkt_count)
       { }
 
       _Local_const_iterator(const _Local_iterator<_Key, _Value, _ExtractKey,
-						  _Hash, _RangeHash, _Unused,
+						  _Hash, _RangeHash, _Access,
 						  __constant_iterators,
 						  __cache>& __x)
       : __base_type(__x)
@@ -1747,16 +1746,16 @@ namespace __detail
       _Local_const_iterator&
       operator++()
       {
-	this->_M_incr();
-	return *this;
+	      this->_M_incr();
+	      return *this;
       }
 
       _Local_const_iterator
       operator++(int)
       {
-	_Local_const_iterator __tmp(*this);
-	this->_M_incr();
-	return __tmp;
+	      _Local_const_iterator __tmp(*this);
+	      this->_M_incr();
+	      return __tmp;
       }
     };
 
@@ -1772,10 +1771,10 @@ namespace __detail
    */
   template<typename _Key, typename _Value, typename _ExtractKey,
 	   typename _Equal, typename _Hash, typename _RangeHash,
-	   typename _Unused, typename _Traits>
+	   _access_type _Access, typename _Traits>
     struct _Hashtable_base
     : public _Hash_code_base<_Key, _Value, _ExtractKey, _Hash, _RangeHash,
-			     _Unused, _Traits::__hash_cached::value>,
+			     _Access, _Traits::__hash_cached::value>,
       private _Hashtable_ebo_helper<0, _Equal>
     {
     public:
@@ -1789,7 +1788,7 @@ namespace __detail
       using __hash_cached = typename __traits_type::__hash_cached;
 
       using __hash_code_base = _Hash_code_base<_Key, _Value, _ExtractKey,
-					       _Hash, _RangeHash, _Unused,
+					       _Hash, _RangeHash, _Access,
 					       __hash_cached::value>;
 
       using __hash_code = typename __hash_code_base::__hash_code;
