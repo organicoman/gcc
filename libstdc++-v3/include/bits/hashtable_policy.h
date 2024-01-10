@@ -39,6 +39,8 @@
 #include <ext/alloc_traits.h>	// for std::__alloc_rebind
 #include <ext/numeric_traits.h>	// for __gnu_cxx::__int_traits
 
+#define __conditional_t conditional_t // delete to port to github
+
 namespace std _GLIBCXX_VISIBILITY(default)
 {
 _GLIBCXX_BEGIN_NAMESPACE_VERSION
@@ -457,6 +459,8 @@ namespace __detail
     struct _Node_iterator_base
     {
       using __node_type = _Hash_node<_Value, _Traits>;
+      using __node_iterator_base_traits = _Traits;
+      using __value_type = _Value;
       using __is_sequential = typename __node_type::__is_sequential;
 
       __node_type* _M_cur;
@@ -524,16 +528,16 @@ namespace __detail
       _Node_iterator&
       operator++() noexcept
       {
-	this->_M_incr();
-	return *this;
+        this->_M_incr();
+        return *this;
       }
 
       _Node_iterator
       operator++(int) noexcept
       {
-	_Node_iterator __tmp(*this);
-	this->_M_incr();
-	return __tmp;
+        _Node_iterator __tmp(*this);
+        this->_M_incr();
+        return __tmp;
       }
     };
 
@@ -588,40 +592,42 @@ namespace __detail
       }
     };
 
-    /// Helper Alias
-    template<__cache _Cache_hash_code>
-    using _Sequential_hashtable_traits = _Hashtable_traits<_Cache_hash_code
-                                                           , __iterator_const::_Yes
-                                                           , __keys::_Unique
-                                                           , __access::_Sequential>;
 
     /// Node iterators, used to iterate through all the hashtable sequentialy.
-    /// It is imperative that this node type should not be used in _NodeAlloc
-    template<typename _Value, __cache _Cache_hash_code>
-    struct _Sequential_const_iterator
-        : public _Node_iterator_base<_Value, _Sequential_hashtable_traits<_Cache_hash_code>>
+    /// @tparam _Base_iterator  A specialization of _Node_iterator_base, for
+    /// the appropriate _Hashtables traits.
+
+  template<typename _Base_iterator, bool _Sequential = true>
+    struct _Sequential_iterator
+    : public _Base_iterator
     {
     private:
-      using __hash_node_traits = _Sequential_hashtable_traits<_Cache_hash_code>;
-      using __base_type = _Node_iterator_base<_Value, __hash_node_traits>;
+      using __hash_node_traits = typename _Base_iterator::__node_iterator_base_traits;
+      using __base_type = _Base_iterator;
       using __node_type = typename __base_type::__node_type;
 
+      // assert if value mismatch between _Traits and _Sequential
+      static_assert(__hash_node_traits::__sequential::value != true,
+                    "In Instantiation of (_Sequential_iterator<typename _Base_iterator, true>)"
+                    "set [`_Sequential`] param In `_Traits<..>` to `__access::_Sequential`]. ");
+
     public:
-      using value_type = _Value;
+      using value_type = typename __base_type::__value_type;
       using difference_type = std::ptrdiff_t;
       using iterator_category = std::forward_iterator_tag;
 
-      using pointer = const value_type*;
-      using reference = const value_type&;
+      using pointer = std::conditional_t<__hash_node_traits::__constant_iterators::value
+                                         , const value_type*, value_type*>;
+      using reference = std::conditional_t<__hash_node_traits::__constant_iterators::value
+                                           , const value_type&, value_type&>;
 
-      _Sequential_const_iterator() = default;
+      _Sequential_iterator() = default;
 
-      explicit _Sequential_const_iterator(__node_type* __p) noexcept
+      explicit _Sequential_iterator(__node_type* __p) noexcept
       : __base_type(__p) { }
 
-      _Sequential_const_iterator(
-        const _Sequential_const_iterator<_Value, _Cache_hash_code>& __x
-        ) noexcept
+      _Sequential_iterator(
+        const _Sequential_iterator& __x) noexcept
       : __base_type(__x._M_cur) { }
 
       reference
@@ -632,17 +638,28 @@ namespace __detail
       operator->() const noexcept
       { return this->_M_cur->_M_valptr(); }
 
-      _Sequential_const_iterator&
+      _Sequential_iterator&
       operator++() noexcept
       { this->_M_step(); return *this; }
 
-      _Sequential_const_iterator
+      _Sequential_iterator
       operator++(int) noexcept
       {
-        _Sequential_const_iterator __tmp(*this);
+        _Sequential_iterator __tmp(*this);
         this->_M_step();
         return __tmp;
       }
+    };
+
+    // specialization for non sequential _Hashtables
+    template<typename _Base_iterator>
+    struct _Sequential_iterator<_Base_iterator, false>
+    {
+        using __hash_node_traits = typename _Base_iterator::__node_iterator_base_traits;
+
+        // catch user error
+        static_assert(__hash_node_traits::__sequential::value != false,
+                      "Iterator sequentiality disabled for a Sequential `_Hash_node<..>`.");
     };
 
   // Many of class template _Hashtable's template parameters are policy
@@ -904,7 +921,7 @@ namespace __detail
                       , "In instantiation of"
                       " (_Map_base<...,typename _Traits, false>); "
                       "set [_Unique_keys] param in `_Traits<..>`"
-                      " to `_Redundant`.");
+                      " to `__keys::_Redundant`.");
       using mapped_type = _Val;
     };
 
@@ -919,7 +936,7 @@ namespace __detail
                     , "In instantiation of"
                     " (_Map_base<...,typename _Traits, true>); "
                     "set [_Unique_keys] param in `_Traits<..>`"
-                    " to `_Unique`.");
+                    " to `__keys::_Unique`.");
     private:
       using __hashtable_base = _Hashtable_base<_Key, pair<const _Key, _Val>,
 					       _Select1st, _Equal, _Hash,
@@ -1032,7 +1049,7 @@ namespace __detail
                       , "In instantiation of"
                       " (_Map_base<...,typename _Traits, __uniq>); "
                       "set [_Unique_keys] param in `_Traits<..>`"
-                      " to `_Unique | _Redundant` according to value of `__uniq`.");
+                      " to `__keys::{_Unique | _Redundant}` according to value of `__uniq`.");
     };
 
   /**
@@ -1160,7 +1177,7 @@ namespace __detail
         static_assert(_Traits::__unique_keys::value != __uks
                     , "In invocation of"
                     " (_M_insert_range<...,typename _Traits>(..., __uks); "
-                    "set [_Unique_keys] param in `_Traits<..>` to `_Unique`.");
+                    "set [_Unique_keys] param in `_Traits<..>` to `__keys::_Unique`.");
         __hashtable& __h = _M_conjure_hashtable();
         for (; __first != __last; ++__first)
           __h._M_insert(*__first, __node_gen, __uks);
@@ -1181,7 +1198,7 @@ namespace __detail
         static_assert(_Traits::__unique_keys::value != __uks
                     , "In invocation of"
                     " (_M_insert_range<...,typename _Traits>(..., __uks); "
-                    "set [_Unique_keys] param in `_Traits<..>` to `_Redundant`.");
+                    "set [_Unique_keys] param in `_Traits<..>` to `__keys::_Redundant`.");
         using __rehash_guard_t = typename __hashtable::__rehash_guard_t;
         using __pair_type = std::pair<bool, std::size_t>;
 
@@ -1231,7 +1248,7 @@ namespace __detail
       static_assert(_Traits::__constant_iterators::value != true
                     , "In instantiation of"
                     " (_Insert<...,typename _Traits, true>) "
-                    "set [_Unique_keys] param in `_Traits<..>` to `_Unique`.");
+                    "set [_Unique_keys] param in `_Traits<..>` to `__keys::_Unique`.");
 
       using __base_type = _Insert_base<_Key, _Value, _Alloc, _ExtractKey,
 				       _Equal, _Hash, _RangeHash, _Unused,
@@ -1279,7 +1296,7 @@ namespace __detail
       static_assert(_Traits::__constant_iterators::value != true
                     , "In instantiation of"
                     " (_Insert<...,typename _Traits, false>) "
-                    "set [_Unique_keys] param in `_Traits<..>` to `_Redundant`.");
+                    "set [_Unique_keys] param in `_Traits<..>` to `__keys::_Redundant`.");
 
       using __base_type = _Insert_base<_Key, _Value, _Alloc, _ExtractKey,
 				       _Equal, _Hash, _RangeHash, _Unused,
@@ -1571,7 +1588,7 @@ namespace __detail
       static_assert(_Traits::__hash_cached::value != true
                     , "In instantiation of"
                     " (_Local_iterator_base<...,typename _Traits, true>) "
-                    "set [_Cache_hash_code] param in `_Traits<..>` to `_Enable`.");
+                    "set [_Cache_hash_code] param in `_Traits<..>` to `__cache::_Enable`.");
     protected:
       using __base_node_iter = _Node_iterator_base<_Value, _Traits>;
       using __hash_code_base = _Hash_code_base<_Key, _Value, _ExtractKey,
