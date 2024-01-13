@@ -39,8 +39,6 @@
 #include <ext/alloc_traits.h>	// for std::__alloc_rebind
 #include <ext/numeric_traits.h>	// for __gnu_cxx::__int_traits
 
-#define __conditional_t conditional_t // delete to port to github
-
 namespace std _GLIBCXX_VISIBILITY(default)
 {
 _GLIBCXX_BEGIN_NAMESPACE_VERSION
@@ -122,9 +120,9 @@ namespace __detail
     struct _ConvertToValueType<_Identity, _Value>
     {
       template<typename _Kt>
-	constexpr _Kt&&
-	operator()(_Kt&& __k) const noexcept
-	{ return std::forward<_Kt>(__k); }
+	      constexpr _Kt&&
+	      operator()(_Kt&& __k) const noexcept
+	      { return std::forward<_Kt>(__k); }
     };
 
   template<typename _Value>
@@ -139,14 +137,14 @@ namespace __detail
       { return __x; }
 
       template<typename _Kt, typename _Val>
-	constexpr std::pair<_Kt, _Val>&&
-	operator()(std::pair<_Kt, _Val>&& __x) const noexcept
-	{ return std::move(__x); }
+	      constexpr std::pair<_Kt, _Val>&&
+	      operator()(std::pair<_Kt, _Val>&& __x) const noexcept
+	      { return std::move(__x); }
 
       template<typename _Kt, typename _Val>
-	constexpr const std::pair<_Kt, _Val>&
-	operator()(const std::pair<_Kt, _Val>& __x) const noexcept
-	{ return __x; }
+	      constexpr const std::pair<_Kt, _Val>&
+	      operator()(const std::pair<_Kt, _Val>& __x) const noexcept
+	      { return __x; }
     };
 
   template<typename _ExKey>
@@ -156,23 +154,23 @@ namespace __detail
     struct _NodeBuilder<_Select1st>
     {
       template<typename _Kt, typename _Arg, typename _NodeGenerator>
-	static auto
-	_S_build(_Kt&& __k, _Arg&& __arg, const _NodeGenerator& __node_gen)
-	-> typename _NodeGenerator::__node_ptr
-	{
-	  return __node_gen(std::forward<_Kt>(__k),
-			    std::forward<_Arg>(__arg).second);
-	}
+	      static auto
+	      _S_build(_Kt&& __k, _Arg&& __arg, const _NodeGenerator& __node_gen)
+	      -> typename _NodeGenerator::__node_ptr
+	      {
+	        return __node_gen(std::forward<_Kt>(__k)
+                          , std::forward<_Arg>(__arg).second);
+	      }
     };
 
   template<>
     struct _NodeBuilder<_Identity>
     {
       template<typename _Kt, typename _Arg, typename _NodeGenerator>
-	static auto
-	_S_build(_Kt&& __k, _Arg&&, const _NodeGenerator& __node_gen)
-	-> typename _NodeGenerator::__node_ptr
-	{ return __node_gen(std::forward<_Kt>(__k)); }
+	      static auto
+	      _S_build(_Kt&& __k, _Arg&&, const _NodeGenerator& __node_gen)
+	      -> typename _NodeGenerator::__node_ptr
+	      { return __node_gen(std::forward<_Kt>(__k)); }
     };
 
   template<typename _HashtableAlloc, typename _NodePtr>
@@ -183,8 +181,8 @@ namespace __detail
 
       ~_NodePtrGuard()
       {
-	if (_M_ptr)
-	  _M_h._M_deallocate_node_ptr(_M_ptr);
+	      if (_M_ptr)
+	      _M_h._M_deallocate_node_ptr(_M_ptr);
       }
     };
 
@@ -200,7 +198,7 @@ namespace __detail
       using __node_alloc_type = _NodeAlloc;
       using __hashtable_alloc = _Hashtable_alloc<__node_alloc_type>;
       using __node_alloc_traits =
-	typename __hashtable_alloc::__node_alloc_traits;
+                    typename __hashtable_alloc::__node_alloc_traits;
 
     public:
       using __node_ptr = typename __hashtable_alloc::__node_ptr;
@@ -213,23 +211,23 @@ namespace __detail
       { _M_h._M_deallocate_nodes(_M_nodes); }
 
       template<typename... _Args>
-	__node_ptr
-	operator()(_Args&&... __args) const
-	{
-	  if (!_M_nodes)
-	    return _M_h._M_allocate_node(std::forward<_Args>(__args)...);
+	    __node_ptr
+	    operator()(_Args&&... __args) const
+	    {
+	      if (!_M_nodes)
+	        return _M_h._M_allocate_node(std::forward<_Args>(__args)...);
 
-	  __node_ptr __node = _M_nodes;
-	  _M_nodes = _M_nodes->_M_next();
-	  __node->_M_nxt = nullptr;
-	  auto& __a = _M_h._M_node_allocator();
-	  __node_alloc_traits::destroy(__a, __node->_M_valptr());
-	  _NodePtrGuard<__hashtable_alloc, __node_ptr> __guard { _M_h, __node };
-	  __node_alloc_traits::construct(__a, __node->_M_valptr(),
-					 std::forward<_Args>(__args)...);
-	  __guard._M_ptr = nullptr;
-	  return __node;
-	}
+	      __node_ptr __node = _M_nodes;
+	      _M_nodes = _M_nodes->_M_next();
+	      __node->_M_nxt = nullptr;
+	      auto& __a = _M_h._M_node_allocator();
+	      __node_alloc_traits::destroy(__a, __node->_M_valptr());
+	      _NodePtrGuard<__hashtable_alloc, __node_ptr> __guard { _M_h, __node };
+	      __node_alloc_traits::construct(__a, __node->_M_valptr()
+                                    , std::forward<_Args>(__args)...);
+	      __guard._M_ptr = nullptr;
+	      return __node;
+	    }
 
     private:
       mutable __node_ptr _M_nodes;
@@ -251,9 +249,9 @@ namespace __detail
       : _M_h(__h) { }
 
       template<typename... _Args>
-	__node_ptr
-	operator()(_Args&&... __args) const
-	{ return _M_h._M_allocate_node(std::forward<_Args>(__args)...); }
+	      __node_ptr
+	      operator()(_Args&&... __args) const
+	      { return _M_h._M_allocate_node(std::forward<_Args>(__args)...); }
 
     private:
       __hashtable_alloc& _M_h;
@@ -267,60 +265,87 @@ namespace __detail
    *
    *  Important traits for hash tables.
    *
-   *  @tparam _Cache_hash_code  Boolean value. True if the value of
+   *  @tparam _Cache_hash_code  Enum value. _Enable if the value of
    *  the hash function is stored along with the value. This is a
    *  time-space tradeoff.  Storing it may improve lookup speed by
    *  reducing the number of times we need to call the _Hash or _Equal
    *  functors.
    *
-   *  @tparam _Constant_iterators  Boolean value. True if iterator and
+   *  @tparam _Constant_iterators  Enum value. _Yes if iterator and
    *  const_iterator are both constant iterator types. This is true
-   *  for unordered_set and unordered_multiset, false for
+   *  for unordered_set and unordered_multiset, _No for
    *  unordered_map and unordered_multimap.
    *
-   *  @tparam _Unique_keys  Boolean value. True if the return value
-   *  of _Hashtable::count(k) is always at most one, false if it may
-   *  be an arbitrary number. This is true for unordered_set and
-   *  unordered_map, false for unordered_multiset and
-   *  unordered_multimap.
+   *  @tparam _Unique_keys  Enum value. _Unique if the return value
+   *  of _Hashtable::count(k) is always at most one.
+   *  This is true for unordered_set and unordered_map.
+   *  _Redundant if it may be an arbitrary number case of unordered_multiset
+   *  and unordered_multimap.
    *
-   *  @tparam _Sequential  Boolean value. True if the hash table models
-   *  a sequential container. This is can be true for unordered_set and
-   *  unordered_map, false for unordered_multiset and
-   *  unordered_multimap.
+   *  @tparam _Sequential  Enum value. _Random if the hash table is
+   *  a random access container (the default). _FIFO if keys are accessed
+   *  sequentialy as a queue, _LIFO if keys are to be accessed as a stack.
+   *  This is true only for unordered_set, unordered_map. Squentiality
+   *  implys key uniqueness, otherwise a vector or deque are more
+   *  appropriate.
    */
 
     enum __cache {_Disable = false, _Enable = true};
     enum __iterator_const { _No = false, _Yes = true};
     enum __keys { _Redundant = false, _Unique = true};
-    enum __access { _Random = false, _Sequential = true};
+    enum __access { _Random = -1, _FIFO = false, _LIFO = true};
 
   /**
-   * @brief The _Hashtable_traits class, primary template
+   *  _Hashtable_traits struct, primary template
    */
     template<__cache _Cache_hash_code, __iterator_const _Constant_iterators
-             , __keys _Unique_keys, __access _Sequential = _Random>
-    struct _Hashtable_traits
-    {
-      using __hash_cached = __bool_constant<_Cache_hash_code == _Enable>;
-      using __constant_iterators = __bool_constant<_Constant_iterators == _Yes>;
-      using __unique_keys = __bool_constant<_Unique_keys == _Unique>;
-      using __sequential = __bool_constant<_Sequential == _Sequential>;
-    };
+             , __keys _Unique_keys, __access _Sequential =_Random>
+      struct _Hashtable_traits;
 
-  /**
-   * @brief Specialization for sequential keys access.
-   */
+  /// specialization for different sequential access behavior.
     template<__cache _Cache_hash_code, __iterator_const _Constant_iterators
              , __keys _Unique_keys>
-    struct _Hashtable_traits<_Cache_hash_code, _Constant_iterators
-                             , _Unique_keys, _Sequential>
-    {
+      struct _Hashtable_traits<_Cache_hash_code, _Constant_iterators
+                            , _Unique_keys, _Random>
+      {
         using __hash_cached = __bool_constant<_Cache_hash_code == _Enable>;
         using __constant_iterators = __bool_constant<_Constant_iterators == _Yes>;
-        using __unique_keys = __bool_constant<true>;
+        using __unique_keys = __bool_constant<_Unique_keys == __keys::_Unique>;
+        using __sequential = __bool_constant<false>;
+      };
+
+    template<__cache _Cache_hash_code, __iterator_const _Constant_iterators>
+      struct _Hashtable_traits<_Cache_hash_code, _Constant_iterators
+                            , __keys::_Unique, _FIFO>
+      {
+        using __hash_cached = __bool_constant<_Cache_hash_code == _Enable>;
+        using __constant_iterators = __bool_constant<_Constant_iterators == _Yes>;
+        using __unique_keys = __bool_constant<__keys::_Unique>;
         using __sequential = __bool_constant<true>;
-    };
+        using __fifo_or_lifo = __bool_constant<_FIFO>;
+      };
+
+    template<__cache _Cache_hash_code, __iterator_const _Constant_iterators>
+      struct _Hashtable_traits<_Cache_hash_code, _Constant_iterators
+                            , __keys::_Unique, _LIFO>
+      {
+        using __hash_cached = __bool_constant<_Cache_hash_code == _Enable>;
+        using __constant_iterators = __bool_constant<_Constant_iterators == _Yes>;
+        using __unique_keys = __bool_constant<__keys::_Unique>;
+        using __sequential = __bool_constant<true>;
+        using __fifo_or_lifo = __bool_constant<_LIFO>;
+      };
+
+  // helper typedefs
+    template<__cache _Cache_hash_code, __iterator_const _Constant_iterators>
+      using _Hashtable_traits_fifo = 
+            _Hashtable_traits<_Cache_hash_code, _Constant_iterators
+                              , __keys::_Unique, __access::_FIFO>;
+
+    template<__cache _Cache_hash_code, __iterator_const _Constant_iterators>
+      using _Hashtable_traits_lifo = 
+            _Hashtable_traits<_Cache_hash_code, _Constant_iterators
+                              , __keys::_Unique, __access::_LIFO>;
 
   /**
    *  struct _Hashtable_hash_traits
@@ -329,12 +354,12 @@ namespace __detail
    *
    */
     template<typename _Hash>
-    struct _Hashtable_hash_traits
-    {
-      static constexpr std::size_t
-      __small_size_threshold() noexcept
-      { return std::__is_fast_hash<_Hash>::value ? 0 : 20; }
-    };
+      struct _Hashtable_hash_traits
+      {
+        static constexpr std::size_t
+        __small_size_threshold() noexcept
+        { return std::__is_fast_hash<_Hash>::value ? 0 : 20; }
+      };
 
   /**
    *  Primary template struct _Hash_node_base
@@ -345,34 +370,34 @@ namespace __detail
    *  In some cases enabling cache is a performance win (e.g. strings).
    */
     template<bool _Sequential = false>
-    struct _Hash_node_base
-    {
-      using __node_sequential_access = false_type;
+      struct _Hash_node_base
+      {
+        using __node_sequential = false_type;
 
-      _Hash_node_base* _M_nxt;
+        _Hash_node_base* _M_nxt;
 
-      _Hash_node_base() noexcept : _M_nxt() { }
+        _Hash_node_base() noexcept : _M_nxt() { }
 
-      _Hash_node_base(_Hash_node_base* __next) noexcept : _M_nxt(__next) { }
-    };
+        _Hash_node_base(_Hash_node_base* __next) noexcept : _M_nxt(__next) { }
+      };
 
     /**
      * @brief Specialization _Hash_node_base class for sequential access.
      */
     template<>
-    struct _Hash_node_base<true>
-    {
-      using __node_sequential_access = true_type;
+      struct _Hash_node_base<true> : public _Hash_node_base<false>
+      {
+        using __node_sequential = true_type;
 
-      _Hash_node_base* _M_nxt;
+        _Hash_node_base* _M_aft;
 
-      _Hash_node_base* _M_aft;
+        _Hash_node_base() noexcept : _Hash_node_base<false>(), _M_aft() { }
 
-      _Hash_node_base() noexcept : _M_nxt() { }
-
-      _Hash_node_base(_Hash_node_base* __next, _Hash_node_base* __after = nullptr)
-        noexcept : _M_nxt(__next), _M_aft(__after) { }
-    };
+        _Hash_node_base(_Hash_node_base* __next
+                      , _Hash_node_base* __after = nullptr) noexcept
+          : _Hash_node_base<false>(__next), _M_aft(__after) 
+          { }
+      };
 
   /**
    *  struct _Hash_node_value_base
@@ -431,15 +456,14 @@ namespace __detail
    *  Primary template struct _Hash_node.
    *  same like above, we will rely on Traits policy,
    *  to customize the hash node.
-   *  Sequentiality is enabled iff the traits activate it.
    */
   template<typename _Value, typename _Traits>
     struct _Hash_node
         : _Hash_node_base<_Traits::__sequential::value>
         , _Hash_node_value<_Value, _Traits::__hash_cached::value>
     {
-      using __hash_node_traits = _Traits;
-      using __is_sequential = typename __hash_node_traits::__sequential;
+      using __base_type = _Hash_node_base<_Traits::__sequential::value>;
+      using __is_sequential = typename __base_type::__node_sequential;
 
       _Hash_node*
       _M_next() const noexcept
@@ -455,13 +479,14 @@ namespace __detail
     };
 
   /// Base class for node iterators.
+  /// _Traits will dictate what type of iterator, base on definition above.
     template<typename _Value, typename _Traits>
     struct _Node_iterator_base
     {
       using __node_type = _Hash_node<_Value, _Traits>;
       using __node_iterator_base_traits = _Traits;
       using __value_type = _Value;
-      using __is_sequential = typename __node_type::__is_sequential;
+      using __sequential_iterator = typename __node_type::__is_sequential;
 
       __node_type* _M_cur;
 
@@ -475,7 +500,10 @@ namespace __detail
 
       void
       _M_step() noexcept
-      { if constexpr (__is_sequential::value) _M_cur = _M_cur->_M_after();}
+      { 
+        if constexpr (__sequential_iterator::value)
+          _M_cur = _M_cur->_M_after();
+      }
 
       friend bool
       operator==(const _Node_iterator_base& __x, const _Node_iterator_base& __y)
@@ -498,7 +526,6 @@ namespace __detail
     private:
       using __base_type = _Node_iterator_base<_Value, _Traits>;
       using __node_type = typename __base_type::__node_type;
-      using __is_sequential = typename __base_type::__is_sequential;
 
     public:
       using value_type = _Value;
@@ -548,16 +575,15 @@ namespace __detail
     {
     private:
       using __base_type = _Node_iterator_base<_Value, _Traits>;
-      using __node_type = typename __base_type::__node_type;      
-      using __is_sequential = typename __base_type::__is_sequential;
+      using __node_type = typename __base_type::__node_type;
 
     public:
-      typedef _Value					value_type;
-      typedef std::ptrdiff_t				difference_type;
-      typedef std::forward_iterator_tag			iterator_category;
+      typedef _Value					          value_type;
+      typedef std::ptrdiff_t				    difference_type;
+      typedef std::forward_iterator_tag	iterator_category;
 
-      typedef const value_type*				pointer;
-      typedef const value_type&				reference;
+      typedef const value_type*				  pointer;
+      typedef const value_type&				  reference;
 
       _Node_const_iterator() = default;
 
@@ -593,23 +619,18 @@ namespace __detail
     };
 
 
-    /// Node iterators, used to iterate through all the hashtable sequentialy.
-    /// @tparam _Base_iterator  A specialization of _Node_iterator_base, for
-    /// the appropriate _Hashtables traits.
-
-  template<typename _Base_iterator, bool _Sequential = true>
+    /// Node iterators, used to iterate sequentialy through all the hashtable.
+    /// This iterator is agnostic to the access behavior (LIFO or FIFO).
+  template<typename _Value, typename _Traits>
     struct _Sequential_iterator
-    : public _Base_iterator
+    : public _Node_iterator<_Value, _Traits>
     {
+      // assert if _Traits doesn't define a sequential node
+      static_assert(_Traits::__sequential::value);
     private:
-      using __hash_node_traits = typename _Base_iterator::__node_iterator_base_traits;
-      using __base_type = _Base_iterator;
+      using __hash_node_traits = _Traits;
+      using __base_type = _Node_iterator<_Value, _Traits>;
       using __node_type = typename __base_type::__node_type;
-
-      // assert if value mismatch between _Traits and _Sequential
-      static_assert(__hash_node_traits::__sequential::value != true,
-                    "In Instantiation of (_Sequential_iterator<typename _Base_iterator, true>)"
-                    "set [`_Sequential`] param In `_Traits<..>` to `__access::_Sequential`]. ");
 
     public:
       using value_type = typename __base_type::__value_type;
@@ -621,22 +642,7 @@ namespace __detail
       using reference = std::conditional_t<__hash_node_traits::__constant_iterators::value
                                            , const value_type&, value_type&>;
 
-      _Sequential_iterator() = default;
-
-      explicit _Sequential_iterator(__node_type* __p) noexcept
-      : __base_type(__p) { }
-
-      _Sequential_iterator(
-        const _Sequential_iterator& __x) noexcept
-      : __base_type(__x._M_cur) { }
-
-      reference
-      operator*() const noexcept
-      { return this->_M_cur->_M_v(); }
-
-      pointer
-      operator->() const noexcept
-      { return this->_M_cur->_M_valptr(); }
+      using __base_type::__base_type;
 
       _Sequential_iterator&
       operator++() noexcept
@@ -651,15 +657,40 @@ namespace __detail
       }
     };
 
-    // specialization for non sequential _Hashtables
-    template<typename _Base_iterator>
-    struct _Sequential_iterator<_Base_iterator, false>
+    /// Node iterators, used to iterate sequentialy through all the hashtable.
+    /// This iterator is agnostic to the access behavior (LIFO or FIFO).
+  template<typename _Value, typename _Traits>
+    struct _Sequential_const_iterator
+    : public _Node_const_iterator<_Value, _Traits>
     {
-        using __hash_node_traits = typename _Base_iterator::__node_iterator_base_traits;
+      // assert if _Traits doesn't define a sequential node
+      static_assert(_Traits::__sequential::value);
+    private:
+      using __hash_node_traits = _Traits;
+      using __base_type = _Node_const_iterator<_Value, _Traits>;
+      using __node_type = typename __base_type::__node_type;
 
-        // catch user error
-        static_assert(__hash_node_traits::__sequential::value != false,
-                      "Iterator sequentiality disabled for a Sequential `_Hash_node<..>`.");
+    public:
+      using value_type = typename __base_type::__value_type;
+      using difference_type = std::ptrdiff_t;
+      using iterator_category = std::forward_iterator_tag;
+
+      using pointer = const value_type*;
+      using reference = const value_type&;
+
+      using __base_type::__base_type;
+
+      _Sequential_iterator&
+      operator++() noexcept
+      { this->_M_step(); return *this; }
+
+      _Sequential_iterator
+      operator++(int) noexcept
+      {
+        _Sequential_iterator __tmp(*this);
+        this->_M_step();
+        return __tmp;
+      }
     };
 
   // Many of class template _Hashtable's template parameters are policy
@@ -690,7 +721,12 @@ namespace __detail
   /// smallest prime that keeps the load factor small enough.
   struct _Prime_rehash_policy
   {
-    using __has_load_factor = true_type;
+    using __has_load_factor = true_type;    
+
+    static const std::size_t _S_growth_factor = 2;
+
+    float		_M_max_load_factor;
+    mutable std::size_t	_M_next_resize;
 
     _Prime_rehash_policy(float __z = 1.0) noexcept
     : _M_max_load_factor(__z), _M_next_resize(0) { }
@@ -729,11 +765,6 @@ namespace __detail
     void
     _M_reset(_State __state)
     { _M_next_resize = __state; }
-
-    static const std::size_t _S_growth_factor = 2;
-
-    float		_M_max_load_factor;
-    mutable std::size_t	_M_next_resize;
   };
 
   /// Range hashing function assuming that second arg is a power of 2.
@@ -768,7 +799,12 @@ namespace __detail
   /// operations.
   struct _Power2_rehash_policy
   {
-    using __has_load_factor = true_type;
+    using __has_load_factor = true_type;    
+
+    static const std::size_t _S_growth_factor = 2;
+
+    float	_M_max_load_factor;
+    std::size_t	_M_next_resize;
 
     _Power2_rehash_policy(float __z = 1.0) noexcept
     : _M_max_load_factor(__z), _M_next_resize(0) { }
@@ -786,28 +822,27 @@ namespace __detail
 	// Special case on container 1st initialization with 0 bucket count
 	// hint. We keep _M_next_resize to 0 to make sure that next time we
 	// want to add an element allocation will take place.
-	return 1;
+	      return 1;
 
       const auto __max_width = std::min<size_t>(sizeof(size_t), 8);
       const auto __max_bkt = size_t(1) << (__max_width * __CHAR_BIT__ - 1);
       std::size_t __res = __clp2(__n);
 
       if (__res == 0)
-	__res = __max_bkt;
+	      __res = __max_bkt;
       else if (__res == 1)
 	// If __res is 1 we force it to 2 to make sure there will be an
 	// allocation so that nothing need to be stored in the initial
 	// single bucket
-	__res = 2;
+	      __res = 2;
 
       if (__res == __max_bkt)
 	// Set next resize to the max value so that we never try to rehash again
 	// as we already reach the biggest possible bucket number.
 	// Note that it might result in max_load_factor not being respected.
-	_M_next_resize = size_t(-1);
+	      _M_next_resize = size_t(-1);
       else
-	_M_next_resize
-	  = __builtin_floor(__res * (double)_M_max_load_factor);
+	      _M_next_resize = __builtin_floor(__res * (double)_M_max_load_factor);
 
       return __res;
     }
@@ -826,24 +861,24 @@ namespace __detail
 		   std::size_t __n_ins) noexcept
     {
       if (__n_elt + __n_ins > _M_next_resize)
-	{
+	    {
 	  // If _M_next_resize is 0 it means that we have nothing allocated so
 	  // far and that we start inserting elements. In this case we start
 	  // with an initial bucket size of 11.
-	  double __min_bkts
-	    = std::max<std::size_t>(__n_elt + __n_ins, _M_next_resize ? 0 : 11)
-	      / (double)_M_max_load_factor;
-	  if (__min_bkts >= __n_bkt)
-	    return { true,
-	      _M_next_bkt(std::max<std::size_t>(__builtin_floor(__min_bkts) + 1,
-						__n_bkt * _S_growth_factor)) };
+	      double __min_bkts 
+          = std::max<std::size_t>(__n_elt + __n_ins, _M_next_resize ? 0 : 11)
+	                               / (double)_M_max_load_factor;
+	      if (__min_bkts >= __n_bkt)
+	        return{ true
+                , _M_next_bkt(
+                  std::max<std::size_t> (__builtin_floor(__min_bkts) + 1
+                  , __n_bkt * _S_growth_factor)) };
 
-	  _M_next_resize
-	    = __builtin_floor(__n_bkt * (double)_M_max_load_factor);
-	  return { false, 0 };
-	}
+	      _M_next_resize = __builtin_floor(__n_bkt * (double)_M_max_load_factor);
+	      return { false, 0 };
+	    }
       else
-	return { false, 0 };
+	      return { false, 0 };
     }
 
     typedef std::size_t _State;
@@ -859,11 +894,6 @@ namespace __detail
     void
     _M_reset(_State __state) noexcept
     { _M_next_resize = __state; }
-
-    static const std::size_t _S_growth_factor = 2;
-
-    float	_M_max_load_factor;
-    std::size_t	_M_next_resize;
   };
 
   template<typename _RehashPolicy>
@@ -880,8 +910,8 @@ namespace __detail
 
       ~_RehashStateGuard()
       {
-	if (_M_guarded_obj)
-	  _M_guarded_obj->_M_reset(_M_prev_state);
+	      if (_M_guarded_obj)
+	        _M_guarded_obj->_M_reset(_M_prev_state);
       }
     };
 
