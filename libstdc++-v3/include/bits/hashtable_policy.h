@@ -1613,12 +1613,12 @@ namespace __detail
       {
         __base_node_iter::_M_incr();
         if (this->_M_cur)
-          {
-            std::size_t 
-              __bkt = _RangeHash{}(this->_M_cur->_M_hash_code, _M_bucket_count);
-            if (__bkt != _M_bucket)
-              this->_M_cur = nullptr;
-          }
+        {
+          std::size_t 
+            __bkt = _RangeHash{}(this->_M_cur->_M_hash_code, _M_bucket_count);
+          if (__bkt != _M_bucket)
+            this->_M_cur = nullptr;
+        }
       }
 
       std::size_t _M_bucket;
@@ -1761,12 +1761,12 @@ namespace __detail
       using __hash_code_base = typename __base_type::__hash_code_base;
 
     public:
-      using value_type = _Value;
-      using pointer = __conditional_t<__constant_iterators::value
-                                     ,const value_type*, value_type*>;
-      using reference = __conditional_t<__constant_iterators::value
-                                       ,const value_type&, value_type&>;
-      using difference_type = ptrdiff_t;
+      using value_type        = _Value;
+      using pointer           = __conditional_t<__constant_iterators::value
+                                    ,const value_type*, value_type*>;
+      using reference         = __conditional_t<__constant_iterators::value
+                                    ,const value_type&, value_type&>;
+      using difference_type   = ptrdiff_t;
       using iterator_category = forward_iterator_tag;
 
       _Local_iterator() = default;
@@ -1815,17 +1815,17 @@ namespace __detail
       using __hash_code_base = typename __base_type::__hash_code_base;
 
     public:
-      typedef _Value					          value_type;
-      typedef const value_type*	        pointer;
-      typedef const value_type&	        reference;
-      typedef std::ptrdiff_t				    difference_type;
-      typedef std::forward_iterator_tag iterator_category;
+      using value_type				= _Value;
+      using pointer	          = const value_type*;
+      using reference	        = const value_type&;
+      using difference_type		= std::ptrdiff_t;
+      using iterator_category = std::forward_iterator_tag;
 
       _Local_const_iterator() = default;
 
-      _Local_const_iterator(const __hash_code_base& __base,
-                _Hash_node<_Value, _Traits>* __n,
-			    std::size_t __bkt, std::size_t __bkt_count)
+      _Local_const_iterator(const __hash_code_base& __base
+                , _Hash_node<_Value, _Traits>* __n, std::size_t __bkt
+                , std::size_t __bkt_count)
       : __base_type(__base, __n, __bkt, __bkt_count)
       { }
 
@@ -1877,18 +1877,17 @@ namespace __detail
       private _Hashtable_ebo_helper<0, _Equal>
     {
     public:
-      typedef _Key			 key_type;
-      typedef _Value		 value_type;
-      typedef _Equal		 key_equal;
-      typedef std::size_t	 size_type;
+      typedef _Key			     key_type;
+      typedef _Value		     value_type;
+      typedef _Equal		     key_equal;
+      typedef std::size_t	   size_type;
       typedef std::ptrdiff_t difference_type;
 
       using __traits_type = _Traits;
       using __hash_cached = typename __traits_type::__hash_cached;
 
       using __hash_code_base = _Hash_code_base<_Key, _Value, _ExtractKey,
-                           _Hash, _RangeHash, _Traits,
-					       __hash_cached::value>;
+                           _Hash, _RangeHash, _Traits, __hash_cached::value>;
 
       using __hash_code = typename __hash_code_base::__hash_code;
 
@@ -1922,7 +1921,7 @@ namespace __detail
 
       bool
       _M_key_equals(const _Key& __k,
-		    const _Hash_node_value<_Value,
+		      const _Hash_node_value<_Value,
             __hash_cached::value>& __n) const
       {
         static_assert(__is_invocable<const _Equal&, const _Key&, const _Key&>{},
@@ -1934,7 +1933,7 @@ namespace __detail
       template<typename _Kt>
       bool
       _M_key_equals_tr(const _Kt& __k,
-            const _Hash_node_value<_Value,
+          const _Hash_node_value<_Value,
             __hash_cached::value>& __n) const
       {
         static_assert(
@@ -1999,9 +1998,11 @@ namespace __detail
     struct _Equality<_Key, _Value, _Alloc, _ExtractKey, _Equal,
 		     _Hash, _RangeHash, _Unused, _RehashPolicy, _Traits, true>
     {
+      // catch value mismatch
+      static_assert(_Traits::__unique_keys::value != true);
+
       using __hashtable = _Hashtable<_Key, _Value, _Alloc, _ExtractKey, _Equal,
-				     _Hash, _RangeHash, _Unused,
-				     _RehashPolicy, _Traits>;
+				                    _Hash, _RangeHash, _Unused, _RehashPolicy, _Traits>;
 
       bool
       _M_equal(const __hashtable&) const;
@@ -2030,13 +2031,13 @@ namespace __detail
 
         for (__node_ptr __n = static_cast<__node_ptr>(__prev_n->_M_nxt);;
 	       __n = __n->_M_next())
-	    {
-	      if (__n->_M_v() == __x_n->_M_v())
+	      {
+	        if (__n->_M_v() == __x_n->_M_v())
             break;
 
           if (!__n->_M_nxt || __other._M_bucket_index(*__n->_M_next()) != __ybkt)
             return false;
-	    }
+	      }
       }
 
       return true;
@@ -2050,6 +2051,9 @@ namespace __detail
     struct _Equality<_Key, _Value, _Alloc, _ExtractKey, _Equal,
 		     _Hash, _RangeHash, _Unused, _RehashPolicy, _Traits, false>
     {
+      // catch value mismatch 
+      static_assert(_Traits::__unique_keys::value != false);
+
       using __hashtable = _Hashtable<_Key, _Value, _Alloc, _ExtractKey, _Equal,
 				     _Hash, _RangeHash, _Unused,
 				     _RehashPolicy, _Traits>;
@@ -2141,7 +2145,7 @@ namespace __detail
     public:
       using __node_type = typename _NodeAlloc::value_type;
       using __node_alloc_type = _NodeAlloc;
-      using __node_is_seq = typename __node_type::__is_sequential; // find it and change
+      using __node_is_seq = typename __node_type::__is_sequential;
       // Use __gnu_cxx to benefit from _S_always_equal and al.
       using __node_alloc_traits = __gnu_cxx::__alloc_traits<__node_alloc_type>;
 
