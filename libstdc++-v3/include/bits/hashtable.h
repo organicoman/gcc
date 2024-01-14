@@ -280,10 +280,10 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
 
       // mapped_type, if present, comes from _Map_base.
       // hasher, if present, comes from _Hash_code_base/_Hashtable_base.
-      typedef typename __value_alloc_traits::pointer		pointer;
+      typedef typename __value_alloc_traits::pointer		    pointer;
       typedef typename __value_alloc_traits::const_pointer	const_pointer;
-      typedef value_type&					                reference;
-      typedef const value_type&					            const_reference;
+      typedef value_type&					                          reference;
+      typedef const value_type&					                    const_reference;
 
       using iterator = typename __insert_base::iterator;
 
@@ -298,7 +298,10 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
             _ExtractKey, _Hash, _RangeHash, __traits_type>;
 
       using sequential_iterator =
-          __detail::_Sequential_iterator<iterator, __sequential::value>;
+          __detail::_Sequential_iterator<_Value, _Traits>;
+
+      using const_sequential_iterator =
+          __detail::_Sequential_const_iterator<_Value, _Traits>;
 
     private:
       using __rehash_type = _RehashPolicy;
