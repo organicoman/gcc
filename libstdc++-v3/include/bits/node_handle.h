@@ -72,8 +72,8 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
       allocator_type
       get_allocator() const noexcept
       {
-	__glibcxx_assert(!this->empty());
-	return allocator_type(_M_alloc._M_alloc);
+	      __glibcxx_assert(!this->empty());
+	      return allocator_type(_M_alloc._M_alloc);
       }
 
       explicit operator bool() const noexcept { return _M_ptr != nullptr; }
@@ -86,63 +86,63 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
 
       ~_Node_handle_common()
       {
-	if (!empty())
-	  _M_reset();
+	      if (!empty())
+	        _M_reset();
       }
 
       _Node_handle_common(_Node_handle_common&& __nh) noexcept
       : _M_ptr(__nh._M_ptr)
       {
-	if (_M_ptr)
-	  _M_move(std::move(__nh));
+	      if (_M_ptr)
+	        _M_move(std::move(__nh));
       }
 
       _Node_handle_common&
       operator=(_Node_handle_common&& __nh) noexcept
       {
-	if (empty())
-	  {
-	    if (!__nh.empty())
-	      _M_move(std::move(__nh));
-	  }
-	else if (__nh.empty())
-	  _M_reset();
-	else
-	  {
-	    // Free the current node before replacing the allocator.
-	    _AllocTraits::destroy(*_M_alloc, _M_ptr->_M_valptr());
-	    _AllocTraits::deallocate(*_M_alloc, _M_ptr, 1);
+	      if (empty())
+	      {
+	        if (!__nh.empty())
+	          _M_move(std::move(__nh));
+	      }
+	      else if (__nh.empty())
+	        _M_reset();
+	      else
+	      {
+	        // Free the current node before replacing the allocator.
+	        _AllocTraits::destroy(*_M_alloc, _M_ptr->_M_valptr());
+	        _AllocTraits::deallocate(*_M_alloc, _M_ptr, 1);
 
-	    _M_alloc = __nh._M_alloc.release(); // assigns if POCMA
-	    _M_ptr = __nh._M_ptr;
-	    __nh._M_ptr = nullptr;
-	  }
-	return *this;
+	        _M_alloc = __nh._M_alloc.release(); // assigns if POCMA
+	        _M_ptr = __nh._M_ptr;
+	        __nh._M_ptr = nullptr;
+	      }
+	      return *this;
       }
 
       _Node_handle_common(typename _AllocTraits::pointer __ptr,
 			  const _NodeAlloc& __alloc)
       : _M_ptr(__ptr), _M_alloc(__alloc)
       {
-	__glibcxx_assert(__ptr != nullptr);
+	      __glibcxx_assert(__ptr != nullptr);
       }
 
       void
       _M_swap(_Node_handle_common& __nh) noexcept
       {
-	if (empty())
-	  {
-	    if (!__nh.empty())
-	      _M_move(std::move(__nh));
-	  }
-	else if (__nh.empty())
-	  __nh._M_move(std::move(*this));
-	else
-	  {
-	    using std::swap;
-	    swap(_M_ptr, __nh._M_ptr);
-	    _M_alloc.swap(__nh._M_alloc); // swaps if POCS
-	  }
+	      if (empty())
+	      {
+	        if (!__nh.empty())
+	          _M_move(std::move(__nh));
+	      }
+	      else if (__nh.empty())
+	        __nh._M_move(std::move(*this));
+	      else
+	      {
+	        using std::swap;
+	        swap(_M_ptr, __nh._M_ptr);
+	        _M_alloc.swap(__nh._M_alloc); // swaps if POCS
+	      }
       }
 
     private:
@@ -152,9 +152,9 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
       void
       _M_move(_Node_handle_common&& __nh) noexcept
       {
-	::new (std::__addressof(_M_alloc)) _NodeAlloc(__nh._M_alloc.release());
-	_M_ptr = __nh._M_ptr;
-	__nh._M_ptr = nullptr;
+	      ::new (std::__addressof(_M_alloc)) _NodeAlloc(__nh._M_alloc.release());
+	      _M_ptr = __nh._M_ptr;
+	      __nh._M_ptr = nullptr;
       }
 
       // Deallocates the node, destroys the allocator.
@@ -163,10 +163,10 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
       void
       _M_reset() noexcept
       {
-	_NodeAlloc __alloc = _M_alloc.release();
-	_AllocTraits::destroy(__alloc, _M_ptr->_M_valptr());
-	_AllocTraits::deallocate(__alloc, _M_ptr, 1);
-	_M_ptr = nullptr;
+	      _NodeAlloc __alloc = _M_alloc.release();
+	      _AllocTraits::destroy(__alloc, _M_ptr->_M_valptr());
+	      _AllocTraits::deallocate(__alloc, _M_ptr, 1);
+	      _M_ptr = nullptr;
       }
 
     protected:
@@ -177,60 +177,60 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
       // Call release() before destruction iff the allocator member is active.
       union _Optional_alloc
       {
-	_Optional_alloc() { }
-	~_Optional_alloc() { }
+	      _Optional_alloc() { }
+	      ~_Optional_alloc() { }
 
-	_Optional_alloc(_Optional_alloc&&) = delete;
-	_Optional_alloc& operator=(_Optional_alloc&&) = delete;
+	      _Optional_alloc(_Optional_alloc&&) = delete;
+	      _Optional_alloc& operator=(_Optional_alloc&&) = delete;
 
-	_Optional_alloc(const _NodeAlloc& __alloc) noexcept
-	: _M_alloc(__alloc)
-	{ }
+	      _Optional_alloc(const _NodeAlloc& __alloc) noexcept
+	      : _M_alloc(__alloc)
+	      { }
 
-	// Precondition: _M_alloc is the active member of the union.
-	void
-	operator=(_NodeAlloc&& __alloc) noexcept
-	{
-	  using _ATr = _AllocTraits;
-	  if constexpr (_ATr::propagate_on_container_move_assignment::value)
-	    _M_alloc = std::move(__alloc);
-	  else if constexpr (!_AllocTraits::is_always_equal::value)
-	    __glibcxx_assert(_M_alloc == __alloc);
-	}
+	      // Precondition: _M_alloc is the active member of the union.
+	      void
+	      operator=(_NodeAlloc&& __alloc) noexcept
+	      {
+	        using _ATr = _AllocTraits;
+	        if constexpr (_ATr::propagate_on_container_move_assignment::value)
+	          _M_alloc = std::move(__alloc);
+	        else if constexpr (!_AllocTraits::is_always_equal::value)
+	          __glibcxx_assert(_M_alloc == __alloc);
+	      }
 
-	// Precondition: _M_alloc is the active member of both unions.
-	void
-	swap(_Optional_alloc& __other) noexcept
-	{
-	  using std::swap;
-	  if constexpr (_AllocTraits::propagate_on_container_swap::value)
-	    swap(_M_alloc, __other._M_alloc);
-	  else if constexpr (!_AllocTraits::is_always_equal::value)
-	    __glibcxx_assert(_M_alloc == __other._M_alloc);
-	}
+	      // Precondition: _M_alloc is the active member of both unions.
+	      void
+	      swap(_Optional_alloc& __other) noexcept
+	      {
+	        using std::swap;
+	        if constexpr (_AllocTraits::propagate_on_container_swap::value)
+	          swap(_M_alloc, __other._M_alloc);
+	        else if constexpr (!_AllocTraits::is_always_equal::value)
+	          __glibcxx_assert(_M_alloc == __other._M_alloc);
+	      }
 
-	// Precondition: _M_alloc is the active member of the union.
-	_NodeAlloc& operator*() noexcept { return _M_alloc; }
+	      // Precondition: _M_alloc is the active member of the union.
+	      _NodeAlloc& operator*() noexcept { return _M_alloc; }
 
-	// Precondition: _M_alloc is the active member of the union.
-	_NodeAlloc release() noexcept
-	{
-	  _NodeAlloc __tmp = std::move(_M_alloc);
-	  _M_alloc.~_NodeAlloc();
-	  return __tmp;
-	}
+	      // Precondition: _M_alloc is the active member of the union.
+	      _NodeAlloc release() noexcept
+	      {
+	        _NodeAlloc __tmp = std::move(_M_alloc);
+	        _M_alloc.~_NodeAlloc();
+	        return __tmp;
+	      }
 
-	struct _Empty { };
+	      struct _Empty { };
 
-	[[__no_unique_address__]] _Empty     _M_empty;
-	[[__no_unique_address__]] _NodeAlloc _M_alloc;
+	      [[__no_unique_address__]] _Empty     _M_empty;
+	      [[__no_unique_address__]] _NodeAlloc _M_alloc;
       };
 
       [[__no_unique_address__]] _Optional_alloc _M_alloc;
 
       template<typename _Key2, typename _Value2, typename _KeyOfValue,
 	       typename _Compare, typename _ValueAlloc>
-	friend class _Rb_tree;
+	        friend class _Rb_tree;
 
       /// @endcond
     };
@@ -253,24 +253,24 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
       key_type&
       key() const noexcept
       {
-	__glibcxx_assert(!this->empty());
-	return *_M_pkey;
+	      __glibcxx_assert(!this->empty());
+	      return *_M_pkey;
       }
 
       mapped_type&
       mapped() const noexcept
       {
-	__glibcxx_assert(!this->empty());
-	return *_M_pmapped;
+	      __glibcxx_assert(!this->empty());
+	      return *_M_pmapped;
       }
 
       void
       swap(_Node_handle& __nh) noexcept
       {
-	this->_M_swap(__nh);
-	using std::swap;
-	swap(_M_pkey, __nh._M_pkey);
-	swap(_M_pmapped, __nh._M_pmapped);
+	      this->_M_swap(__nh);
+	      using std::swap;
+	      swap(_M_pkey, __nh._M_pkey);
+	      swap(_M_pmapped, __nh._M_pmapped);
       }
 
       friend void
@@ -285,44 +285,43 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
 		   const _NodeAlloc& __alloc)
       : _Node_handle_common<_Value, _NodeAlloc>(__ptr, __alloc)
       {
-	if (__ptr)
-	  {
-	    auto& __key = const_cast<_Key&>(__ptr->_M_valptr()->first);
-	    _M_pkey = _S_pointer_to(__key);
-	    _M_pmapped = _S_pointer_to(__ptr->_M_valptr()->second);
-	  }
-	else
-	  {
-	    _M_pkey = nullptr;
-	    _M_pmapped = nullptr;
-	  }
+	      if (__ptr)
+	        {
+	          auto& __key = const_cast<_Key&>(__ptr->_M_valptr()->first);
+	          _M_pkey = _S_pointer_to(__key);
+	          _M_pmapped = _S_pointer_to(__ptr->_M_valptr()->second);
+	        }
+	      else
+	      {
+	        _M_pkey = nullptr;
+	        _M_pmapped = nullptr;
+	      }
       }
 
       template<typename _Tp>
-	using __pointer
-	  = __ptr_rebind<typename _AllocTraits::pointer,
-			 remove_reference_t<_Tp>>;
+	      using __pointer = __ptr_rebind<typename _AllocTraits::pointer
+                                      , remove_reference_t<_Tp>>;
 
       __pointer<_Key>				_M_pkey = nullptr;
       __pointer<typename _Value::second_type>	_M_pmapped = nullptr;
 
       template<typename _Tp>
-	__pointer<_Tp>
-	_S_pointer_to(_Tp& __obj)
-	{ return pointer_traits<__pointer<_Tp>>::pointer_to(__obj); }
+	      __pointer<_Tp>
+	      _S_pointer_to(_Tp& __obj)
+	      { return pointer_traits<__pointer<_Tp>>::pointer_to(__obj); }
 
       const key_type&
       _M_key() const noexcept { return key(); }
 
       template<typename _Key2, typename _Value2, typename _KeyOfValue,
 	       typename _Compare, typename _ValueAlloc>
-	friend class _Rb_tree;
+	        friend class _Rb_tree;
 
       template<typename _Key2, typename _Value2, typename _ValueAlloc,
 	       typename _ExtractKey, typename _Equal,
 	       typename _Hash, typename _RangeHash, typename _Unused,
 	       typename _RehashPolicy, typename _Traits>
-	friend class _Hashtable;
+	        friend class _Hashtable;
     };
 
   /// Node handle type for sets.
@@ -343,8 +342,8 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
       value_type&
       value() const noexcept
       {
-	__glibcxx_assert(!this->empty());
-	return *this->_M_ptr->_M_valptr();
+	      __glibcxx_assert(!this->empty());
+	      return *this->_M_ptr->_M_valptr();
       }
 
       void
@@ -368,13 +367,13 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
 
       template<typename _Key, typename _Val, typename _KeyOfValue,
 	       typename _Compare, typename _Alloc>
-	friend class _Rb_tree;
+	        friend class _Rb_tree;
 
       template<typename _Key2, typename _Value2, typename _ValueAlloc,
 	       typename _ExtractKey, typename _Equal,
 	       typename _Hash, typename _RangeHash, typename _Unused,
 	       typename _RehashPolicy, typename _Traits>
-	friend class _Hashtable;
+	        friend class _Hashtable;
     };
 
   /// Return type of insert(node_handle&&) on unique maps/sets.

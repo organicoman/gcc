@@ -484,7 +484,8 @@ namespace __detail
     };
 
   /// Base class for node iterators.
-  /// _Traits will dictate what type of iterator, base on definition above.
+  /// _Traits will dictate what type of iterator,
+  /// based on definition of parameters.
     template<typename _Value, typename _Traits>
     struct _Node_iterator_base
     {
