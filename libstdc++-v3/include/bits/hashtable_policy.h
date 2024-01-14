@@ -39,6 +39,8 @@
 #include <ext/alloc_traits.h>	// for std::__alloc_rebind
 #include <ext/numeric_traits.h>	// for __gnu_cxx::__int_traits
 
+#define __conditional_t std::conditional_t // to delete
+
 namespace std _GLIBCXX_VISIBILITY(default)
 {
 _GLIBCXX_BEGIN_NAMESPACE_VERSION
@@ -290,6 +292,9 @@ namespace __detail
    *  appropriate.
    */
 
+    // enums for readability sake.
+    // instead of _ClassName<false, true, true,..>
+    // we use _ClassName<__cache::_Enable, __keys::_Unique...>
     enum __cache {_Disable = false, _Enable = true};
     enum __iterator_const { _No = false, _Yes = true};
     enum __keys { _Redundant = false, _Unique = true};
@@ -626,7 +631,8 @@ namespace __detail
     : public _Node_iterator<_Value, _Traits>
     {
       // assert if _Traits doesn't define a sequential node
-      static_assert(_Traits::__sequential::value);
+      static_assert(_Traits::__sequential::value
+                   , "_Traits must have Sequential behavior.");
     private:
       using __hash_node_traits = _Traits;
       using __base_type = _Node_iterator<_Value, _Traits>;
@@ -664,7 +670,8 @@ namespace __detail
     : public _Node_const_iterator<_Value, _Traits>
     {
       // assert if _Traits doesn't define a sequential node
-      static_assert(_Traits::__sequential::value);
+      static_assert(_Traits::__sequential::value
+                   ,"_Traits must define a sequential iterator.");
     private:
       using __hash_node_traits = _Traits;
       using __base_type = _Node_const_iterator<_Value, _Traits>;
@@ -680,14 +687,14 @@ namespace __detail
 
       using __base_type::__base_type;
 
-      _Sequential_iterator&
+      _Sequential_const_iterator&
       operator++() noexcept
       { this->_M_step(); return *this; }
 
-      _Sequential_iterator
+      _Sequential_const_iterator
       operator++(int) noexcept
       {
-        _Sequential_iterator __tmp(*this);
+        _Sequential_const_iterator __tmp(*this);
         this->_M_step();
         return __tmp;
       }
@@ -1070,7 +1077,8 @@ namespace __detail
 		_RangeHash, _Unused, _RehashPolicy, _Traits, __uniq>
     {
       // catch value mismatch
-      static_assert(_Traits::__unique_keys::value != __uniq);
+      static_assert(_Traits::__unique_keys::value != __uniq
+                   , "Mismatch between the _Traits and the Specialization.");
     };
 
   /**
@@ -1259,7 +1267,8 @@ namespace __detail
 			  _Hash, _RangeHash, _Unused, _RehashPolicy, _Traits>
     {
       //catch value mismatch
-      static_assert(_Traits::__constant_iterators::value);
+      static_assert(_Traits::__constant_iterators::value
+                   , "Mismatch between the _Traits and the Specialization.");
 
       using __base_type = _Insert_base<_Key, _Value, _Alloc, _ExtractKey,
 				       _Equal, _Hash, _RangeHash, _Unused,
@@ -1305,7 +1314,8 @@ namespace __detail
 			  _Hash, _RangeHash, _Unused, _RehashPolicy, _Traits>
     {
       // catch value mismatch
-      static_assert(_Traits::__constant_iterators::value != false);
+      static_assert(_Traits::__constant_iterators::value != false
+                   , "Mismatch between the _Traits and the Specialization.");
 
       using __base_type = _Insert_base<_Key, _Value, _Alloc, _ExtractKey,
 				       _Equal, _Hash, _RangeHash, _Unused,
@@ -1595,7 +1605,8 @@ namespace __detail
     : public _Node_iterator_base<_Value, _Traits>
     {
       // catch value mismatch
-      static_assert(_Traits::__hash_cached::value);
+      static_assert(_Traits::__hash_cached::value
+                   , "Traits must define a __hash_cached::value = true.");
 
     protected:
       using __base_node_iter = _Node_iterator_base<_Value, _Traits>;
@@ -1676,7 +1687,8 @@ namespace __detail
     , _Node_iterator_base<_Value, _Traits>
     {
       // catch value mismatch
-      static_assert(_Traits::__hash_cached::value != false);
+      static_assert(_Traits::__hash_cached::value != false
+                   , "_Traits must define __hash_cached::value = false.");
 
     protected:
       using __hash_code_base = _Hash_code_base<_Key, _Value, _ExtractKey,
@@ -1999,7 +2011,8 @@ namespace __detail
 		     _Hash, _RangeHash, _Unused, _RehashPolicy, _Traits, true>
     {
       // catch value mismatch
-      static_assert(_Traits::__unique_keys::value != true);
+      static_assert(_Traits::__unique_keys::value != true
+                   , "Mismatch between _Traits and Specialization.");
 
       using __hashtable = _Hashtable<_Key, _Value, _Alloc, _ExtractKey, _Equal,
 				                    _Hash, _RangeHash, _Unused, _RehashPolicy, _Traits>;
@@ -2052,7 +2065,8 @@ namespace __detail
 		     _Hash, _RangeHash, _Unused, _RehashPolicy, _Traits, false>
     {
       // catch value mismatch 
-      static_assert(_Traits::__unique_keys::value != false);
+      static_assert(_Traits::__unique_keys::value != false
+                   , "Mismatch between _Traits and Specialization.");
 
       using __hashtable = _Hashtable<_Key, _Value, _Alloc, _ExtractKey, _Equal,
 				     _Hash, _RangeHash, _Unused,
