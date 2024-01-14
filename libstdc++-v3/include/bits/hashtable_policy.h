@@ -947,11 +947,6 @@ namespace __detail
     struct _Map_base<_Key, pair<const _Key, _Val>, _Alloc, _Select1st, _Equal,
 		     _Hash, _RangeHash, _Unused, _RehashPolicy, _Traits, false>
     {
-      static_assert(_Traits::__unique_keys::value != false
-                      , "In instantiation of"
-                      " (_Map_base<...,typename _Traits, false>); "
-                      "set [_Unique_keys] param in `_Traits<..>`"
-                      " to `__keys::_Redundant`.");
       using mapped_type = _Val;
     };
 
@@ -962,11 +957,10 @@ namespace __detail
     struct _Map_base<_Key, pair<const _Key, _Val>, _Alloc, _Select1st, _Equal,
 		     _Hash, _RangeHash, _Unused, _RehashPolicy, _Traits, true>
     {
-      static_assert(_Traits::__unique_keys::value != true
-                    , "In instantiation of"
-                    " (_Map_base<...,typename _Traits, true>); "
-                    "set [_Unique_keys] param in `_Traits<..>`"
-                    " to `__keys::_Unique`.");
+      // safe guard against value mismatch
+      static_assert(_Traits::__unique_keys::value, 
+      "_Traits must define _Unique_keys as true.");
+
     private:
       using __hashtable_base = _Hashtable_base<_Key, pair<const _Key, _Val>,
 					       _Select1st, _Equal, _Hash,
@@ -1075,11 +1069,8 @@ namespace __detail
     : _Map_base<_Key, pair<const _Key, _Val>, _Alloc, _Select1st, _Equal, _Hash,
 		_RangeHash, _Unused, _RehashPolicy, _Traits, __uniq>
     {
-      static_assert(_Traits::__unique_keys::value != __uniq
-                      , "In instantiation of"
-                      " (_Map_base<...,typename _Traits, __uniq>); "
-                      "set [_Unique_keys] param in `_Traits<..>`"
-                      " to `__keys::{_Unique | _Redundant}` according to value of `__uniq`.");
+      // catch value mismatch
+      static_assert(_Traits::__unique_keys::value != __uniq);
     };
 
   /**
@@ -1204,10 +1195,6 @@ namespace __detail
       _M_insert_range(_InputIterator __first, _InputIterator __last,
 		      const _NodeGetter& __node_gen, true_type __uks)
       {
-        static_assert(_Traits::__unique_keys::value != __uks
-                    , "In invocation of"
-                    " (_M_insert_range<...,typename _Traits>(..., __uks); "
-                    "set [_Unique_keys] param in `_Traits<..>` to `__keys::_Unique`.");
         __hashtable& __h = _M_conjure_hashtable();
         for (; __first != __last; ++__first)
           __h._M_insert(*__first, __node_gen, __uks);
@@ -1225,10 +1212,6 @@ namespace __detail
       _M_insert_range(_InputIterator __first, _InputIterator __last,
 		      const _NodeGetter& __node_gen, false_type __uks)
       {
-        static_assert(_Traits::__unique_keys::value != __uks
-                    , "In invocation of"
-                    " (_M_insert_range<...,typename _Traits>(..., __uks); "
-                    "set [_Unique_keys] param in `_Traits<..>` to `__keys::_Redundant`.");
         using __rehash_guard_t = typename __hashtable::__rehash_guard_t;
         using __pair_type = std::pair<bool, std::size_t>;
 
@@ -1275,10 +1258,8 @@ namespace __detail
     : public _Insert_base<_Key, _Value, _Alloc, _ExtractKey, _Equal,
 			  _Hash, _RangeHash, _Unused, _RehashPolicy, _Traits>
     {
-      static_assert(_Traits::__constant_iterators::value != true
-                    , "In instantiation of"
-                    " (_Insert<...,typename _Traits, true>) "
-                    "set [_Unique_keys] param in `_Traits<..>` to `__keys::_Unique`.");
+      //catch value mismatch
+      static_assert(_Traits::__constant_iterators::value);
 
       using __base_type = _Insert_base<_Key, _Value, _Alloc, _ExtractKey,
 				       _Equal, _Hash, _RangeHash, _Unused,
@@ -1323,10 +1304,8 @@ namespace __detail
     : public _Insert_base<_Key, _Value, _Alloc, _ExtractKey, _Equal,
 			  _Hash, _RangeHash, _Unused, _RehashPolicy, _Traits>
     {
-      static_assert(_Traits::__constant_iterators::value != true
-                    , "In instantiation of"
-                    " (_Insert<...,typename _Traits, false>) "
-                    "set [_Unique_keys] param in `_Traits<..>` to `__keys::_Redundant`.");
+      // catch value mismatch
+      static_assert(_Traits::__constant_iterators::value != false);
 
       using __base_type = _Insert_base<_Key, _Value, _Alloc, _ExtractKey,
 				       _Equal, _Hash, _RangeHash, _Unused,
@@ -1342,30 +1321,30 @@ namespace __detail
       using __base_type::insert;
 
       template<typename _Pair>
-	using __is_cons = std::is_constructible<value_type, _Pair&&>;
+	      using __is_cons = std::is_constructible<value_type, _Pair&&>;
 
       template<typename _Pair>
-	using _IFcons = std::enable_if<__is_cons<_Pair>::value>;
+	      using _IFcons = std::enable_if<__is_cons<_Pair>::value>;
 
       template<typename _Pair>
-	using _IFconsp = typename _IFcons<_Pair>::type;
+	      using _IFconsp = typename _IFcons<_Pair>::type;
 
       template<typename _Pair, typename = _IFconsp<_Pair>>
-	__ireturn_type
-	insert(_Pair&& __v)
-	{
-	  __hashtable& __h = this->_M_conjure_hashtable();
-	  return __h._M_emplace(__unique_keys{}, std::forward<_Pair>(__v));
-	}
+	      __ireturn_type
+	      insert(_Pair&& __v)
+	      {
+	        __hashtable& __h = this->_M_conjure_hashtable();
+	        return __h._M_emplace(__unique_keys{}, std::forward<_Pair>(__v));
+	      }
 
       template<typename _Pair, typename = _IFconsp<_Pair>>
-	iterator
-	insert(const_iterator __hint, _Pair&& __v)
-	{
-	  __hashtable& __h = this->_M_conjure_hashtable();
-	  return __h._M_emplace(__hint, __unique_keys{},
-				std::forward<_Pair>(__v));
-	}
+	      iterator
+	      insert(const_iterator __hint, _Pair&& __v)
+	      {
+	        __hashtable& __h = this->_M_conjure_hashtable();
+	        return __h._M_emplace(__hint, __unique_keys{},
+				    std::forward<_Pair>(__v));
+	      }
    };
 
   template<typename _Policy>
@@ -1451,9 +1430,9 @@ namespace __detail
       _Hashtable_ebo_helper() noexcept(noexcept(_Tp())) : _Tp() { }
 
       template<typename _OtherTp>
-	_Hashtable_ebo_helper(_OtherTp&& __tp)
-	: _Tp(std::forward<_OtherTp>(__tp))
-	{ }
+	      _Hashtable_ebo_helper(_OtherTp&& __tp)
+	      : _Tp(std::forward<_OtherTp>(__tp))
+	      { }
 
       const _Tp& _M_cget() const { return static_cast<const _Tp&>(*this); }
       _Tp& _M_get() { return static_cast<_Tp&>(*this); }
@@ -1466,9 +1445,9 @@ namespace __detail
       _Hashtable_ebo_helper() = default;
 
       template<typename _OtherTp>
-	_Hashtable_ebo_helper(_OtherTp&& __tp)
-	: _M_tp(std::forward<_OtherTp>(__tp))
-	{ }
+	      _Hashtable_ebo_helper(_OtherTp&& __tp)
+	      : _M_tp(std::forward<_OtherTp>(__tp))
+	      { }
 
       const _Tp& _M_cget() const { return _M_tp; }
       _Tp& _M_get() { return _M_tp; }
@@ -1615,19 +1594,17 @@ namespace __detail
                                 _Hash, _RangeHash, _Traits, true>
     : public _Node_iterator_base<_Value, _Traits>
     {
-      static_assert(_Traits::__hash_cached::value != true
-                    , "In instantiation of"
-                    " (_Local_iterator_base<...,typename _Traits, true>) "
-                    "set [_Cache_hash_code] param in `_Traits<..>` to `__cache::_Enable`.");
+      // catch value mismatch
+      static_assert(_Traits::__hash_cached::value);
+
     protected:
       using __base_node_iter = _Node_iterator_base<_Value, _Traits>;
       using __hash_code_base = _Hash_code_base<_Key, _Value, _ExtractKey,
-                          _Hash, _RangeHash, _Traits, true>;
+                          _Hash, _RangeHash, _Traits, _Traits::__hash_cached::value>;
 
       _Local_iterator_base() = default;
-      _Local_iterator_base(const __hash_code_base&,
-               _Hash_node<_Value, _Traits>* __p,
-			   std::size_t __bkt, std::size_t __bkt_count)
+      _Local_iterator_base(const __hash_code_base&, _Hash_node<_Value, _Traits>* __p
+                           , std::size_t __bkt, std::size_t __bkt_count)
       : __base_node_iter(__p), _M_bucket(__bkt), _M_bucket_count(__bkt_count)
       { }
 
@@ -1637,8 +1614,8 @@ namespace __detail
         __base_node_iter::_M_incr();
         if (this->_M_cur)
           {
-            std::size_t __bkt
-              = _RangeHash{}(this->_M_cur->_M_hash_code, _M_bucket_count);
+            std::size_t 
+              __bkt = _RangeHash{}(this->_M_cur->_M_hash_code, _M_bucket_count);
             if (__bkt != _M_bucket)
               this->_M_cur = nullptr;
           }
@@ -1698,6 +1675,9 @@ namespace __detail
                  _Traits>
     , _Node_iterator_base<_Value, _Traits>
     {
+      // catch value mismatch
+      static_assert(_Traits::__hash_cached::value != false);
+
     protected:
       using __hash_code_base = _Hash_code_base<_Key, _Value, _ExtractKey,
                          _Hash, _RangeHash, _Traits, false>;
@@ -1782,10 +1762,10 @@ namespace __detail
 
     public:
       using value_type = _Value;
-        using pointer = __conditional_t<__constant_iterators::value,
-				      const value_type*, value_type*>;
-      using reference = __conditional_t<__constant_iterators::value,
-					const value_type&, value_type&>;
+      using pointer = __conditional_t<__constant_iterators::value
+                                     ,const value_type*, value_type*>;
+      using reference = __conditional_t<__constant_iterators::value
+                                       ,const value_type&, value_type&>;
       using difference_type = ptrdiff_t;
       using iterator_category = forward_iterator_tag;
 
@@ -1831,15 +1811,15 @@ namespace __detail
     private:
       using __cache = typename _Traits::__hash_cached;
       using __base_type = _Local_iterator_base<_Key, _Value, _ExtractKey,
-        _Hash, _RangeHash, _Traits, __cache::value>;
+                            _Hash, _RangeHash, _Traits, __cache::value>;
       using __hash_code_base = typename __base_type::__hash_code_base;
 
     public:
-      typedef _Value					value_type;
-      typedef const value_type*				pointer;
-      typedef const value_type&				reference;
-      typedef std::ptrdiff_t				difference_type;
-      typedef std::forward_iterator_tag			iterator_category;
+      typedef _Value					          value_type;
+      typedef const value_type*	        pointer;
+      typedef const value_type&	        reference;
+      typedef std::ptrdiff_t				    difference_type;
+      typedef std::forward_iterator_tag iterator_category;
 
       _Local_const_iterator() = default;
 
@@ -1893,7 +1873,7 @@ namespace __detail
 	   typename _Unused, typename _Traits>
     struct _Hashtable_base
     : public _Hash_code_base<_Key, _Value, _ExtractKey, _Hash, _RangeHash,
-			     _Unused, _Traits::__hash_cached::value>,
+			     _Traits, _Traits::__hash_cached::value>,
       private _Hashtable_ebo_helper<0, _Equal>
     {
     public:
