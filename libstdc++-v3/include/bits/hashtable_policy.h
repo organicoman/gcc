@@ -319,9 +319,10 @@ namespace __detail
         using __sequential = __bool_constant<false>;
       };
 
-    template<__cache _Cache_hash_code, __iterator_const _Constant_iterators>
+    template<__cache _Cache_hash_code, __iterator_const _Constant_iterators
+             , __keys _Unique_keys>
       struct _Hashtable_traits<_Cache_hash_code, _Constant_iterators
-                            , __keys::_Unique, _FIFO>
+                            , _Unique_keys, _FIFO>
       {
         using __hash_cached = __bool_constant<_Cache_hash_code == _Enable>;
         using __constant_iterators = __bool_constant<_Constant_iterators == _Yes>;
@@ -330,9 +331,10 @@ namespace __detail
         using __fifo_or_lifo = __bool_constant<_FIFO>;
       };
 
-    template<__cache _Cache_hash_code, __iterator_const _Constant_iterators>
+    template<__cache _Cache_hash_code, __iterator_const _Constant_iterators
+            , __keys _Unique_keys>
       struct _Hashtable_traits<_Cache_hash_code, _Constant_iterators
-                            , __keys::_Unique, _LIFO>
+                            , _Unique_keys, _LIFO>
       {
         using __hash_cached = __bool_constant<_Cache_hash_code == _Enable>;
         using __constant_iterators = __bool_constant<_Constant_iterators == _Yes>;

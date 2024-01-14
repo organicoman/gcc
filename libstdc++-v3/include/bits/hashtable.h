@@ -103,9 +103,12 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
    *  If so, returns make_pair(true, n), where n is the new bucket count. If
    *  not, returns make_pair(false, <anything>)
    *
-   *  @tparam _Traits  Compile-time class with four boolean
+   *  @tparam _Traits  Compile-time class with four enum types and defines
    *  std::integral_constant members:  __cache_hash_code, __constant_iterators,
-   *   __unique_keys, __sequential. Sequentiality implys uniqueness of the Keys.
+   *   __unique_keys, __sequential.
+   *  An Extra member type __lifo_or_fifo defined only when container is not
+   *  _Random access.
+   *  Sequentiality implys uniqueness of the Keys.
    *
    *  Each _Hashtable data structure has:
    *
@@ -117,7 +120,7 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
    *  with _Bucket being _Hash_node_base* and _Hash_node containing:
    * 
    *  - _Hash_node*   _M_next
-   *  -[_Hash_node*   _M_after] (only when sequentiality is activated)
+   *  - _Hash_node*   _M_after (only when sequentiality is activated)
    *  - Tp            _M_value
    *  - size_t        _M_hash_code if cache_hash_code is true
    *
@@ -155,7 +158,7 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
    *  Walking through a bucket's nodes requires a check on the hash code to
    *  see if each node is still in the bucket. Such a design assumes a
    *  quite efficient hash functor and is one of the reasons it is
-   *  highly advisable to set __cache_hash_code to true.
+   *  highly advisable to set _Cache_hash_code to __cache::_Enable.
    *
    *  The container iterators are simply built from nodes. This way
    *  incrementing the iterator is perfectly efficient independent of
@@ -177,16 +180,17 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
    *  equivalent values.
    *
    *  To separate the insertion of elements and their sequencing,
-   *  we use the node pointer `_Hash_node_base::_M_aft` to point to the last
-   *  inserted element. This is true only when `_Traits::_sequential = true_type`
+   *  we use the node pointer `_Hash_node_base::_M_aft` to point to nodes
+   *  between buckets. This is true only when _Sequential != __access::_Random;
    *
    *  By default, `_M_before_begin._M_nxt` always points to the last inserted
    *  element.
    *
    *  On erase, the simple iterator design requires using the hash
    *  functor to get the index of the bucket to update. For this
-   *  reason, when __cache_hash_code is set to false the hash functor must
-   *  not throw and this is enforced by a static assertion.
+   *  reason, when __Cache_hash_code is set to __cache::_Disable
+   *  the hash functor must not throw and this is enforced
+   *  by a static assertion.
    *
    *  Functionality is implemented by decomposition into base classes,
    *  where the derived _Hashtable class is used in _Map_base,
@@ -225,12 +229,9 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
 				 _Hash, _RangeHash, _Unused,
 				 _RehashPolicy, _Traits>,
       private __detail::_Hashtable_alloc<
-	__alloc_rebind<_Alloc,
-		       __detail::_Hash_node<_Value,
-                        _Traits>>>,
-      private
-      _Hashtable_enable_default_ctor
-        <_Equal, _Hash, _Alloc, _Traits::__sequential::value>
+	            __alloc_rebind<_Alloc, __detail::_Hash_node<_Value, _Traits>>>,
+      private _Hashtable_enable_default_ctor<_Equal, _Hash, _Alloc
+            , _Traits::__sequential::value>
     {
       static_assert(is_same<typename remove_cv<_Value>::type, _Value>::value,
 	  "unordered container must have a non-const, non-volatile value_type");
@@ -272,7 +273,7 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
       using __rehash_guard_t = __detail::_RehashStateGuard<_RehashPolicy>;
 
     public:
-      typedef _Key						                    key_type;
+      typedef _Key						                  key_type;
       typedef _Value						                value_type;
       typedef _Alloc						                allocator_type;
       typedef _Equal						                key_equal;
